@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model BOOLEANNAMEVALUEPAIR {
+  BOOLEANNAMEVALUEPAIRID      Int                           @id(map: "PK_BOOLEANNAMEVALUEPAIR_BOOLEANNAMEVALUEPAIRID") @default(autoincrement())
+  BOOLEANNAME                 String                        @db.VarChar(255)
+  BOOLEANVALUE                String                        @db.VarChar(4000)
+  CREATEDDATE                 DateTime                      @db.DateTime
+  CREATEDBY                   String                        @db.VarChar(255)
+  UPDATEDDATE                 DateTime?                     @db.DateTime
+  UPDATEDBY                   String?                       @db.VarChar(255)
+  BOOLEANHISTORYNAMESEARCHMAP BOOLEANHISTORYNAMESEARCHMAP[]
+}
+
+model BOOLEANHISTORYNAMESEARCHMAP {
+  BOOLEANNAMEVALUESEARCHHISTORYID Int
+  BOOLEANNAMEVALUEPAIRID          Int
+  BOOLEANNAMEVALUEPAIRWEIGHTAGE   Decimal?                      @db.Decimal(5, 2)
+  BOOLEANNAMEVALUESEARCHHISTORY   BOOLEANNAMEVALUESEARCHHISTORY @relation(fields: [BOOLEANNAMEVALUESEARCHHISTORYID], references: [BOOLEANNAMEVALUESEARCHHISTORYID], onDelete: Cascade, onUpdate: NoAction, map: "FK_BOOLEANNAMEVALUESEARCHMAP_HISTORY")
+  BOOLEANNAMEVALUEPAIR            BOOLEANNAMEVALUEPAIR          @relation(fields: [BOOLEANNAMEVALUEPAIRID], references: [BOOLEANNAMEVALUEPAIRID], onDelete: Cascade, onUpdate: NoAction, map: "FK_BOOLEANNAMEVALUESEARCHMAP_PAIR")
+
+  @@id([BOOLEANNAMEVALUESEARCHHISTORYID, BOOLEANNAMEVALUEPAIRID], map: "PK_BOOLEANNAMEVALUESEARCHMAP")
+}
+
+model BOOLEANNAMEVALUESEARCHHISTORY {
+  BOOLEANNAMEVALUESEARCHHISTORYID Int                           @id(map: "PK_BOOLEANNAMEVALUESEARCHHISTORY") @default(autoincrement())
+  JOBTITLE                        String                        @db.VarChar(255)
+  JOBDESCRIPTION                  String                        @db.VarChar(Max)
+  BOOLEANPHRASE                   String                        @db.VarChar(Max)
+  CREATEDDATE                     DateTime                      @db.DateTime
+  CREATEDBY                       String                        @db.VarChar(255)
+  BOOLEANHISTORYNAMESEARCHMAP     BOOLEANHISTORYNAMESEARCHMAP[]
+}
+
+model USERINFO {
+  USERINFOID         Int                  @id(map: "PK_USERINFO") @default(autoincrement())
+  USERGRID           String               @db.VarChar(255)
+  USERNAME           String               @db.VarChar(255)
+  EMAIL              String               @db.VarChar(255)
+  CREATEDDATE        DateTime             @db.DateTime
+  CREATEDBY          String               @db.VarChar(255)
+  USERSESSIONDETAILS USERSESSIONDETAILS[]
+}
+
+model USERSESSIONDETAILS {
+  USERSESSIONDETAILSID Int       @id(map: "PK_USERSESSIONDETAILS") @default(autoincrement())
+  SESSIONID            String    @db.VarChar(255)
+  USERINFOID           Int
+  IPADDRESS            String    @db.VarChar(255)
+  LOCATION             String?   @db.VarChar(255)
+  COUNTRY              String?   @db.VarChar(255)
+  LOGGEDINTIME         DateTime  @default(now(), map: "DF__USERSESSI__LOGGE__17F790F9") @db.DateTime
+  LOGGEDOUTTIME        DateTime? @db.DateTime
+  USERINFO             USERINFO  @relation(fields: [USERINFOID], references: [USERINFOID], onDelete: Cascade, onUpdate: NoAction, map: "FK_USERSESSIONDETAILS_USERINFO")
+}

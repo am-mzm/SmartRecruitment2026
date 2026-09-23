@@ -1,0 +1,23 @@
+services:
+  pybackend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: pybackend_revised:latest
+    container_name: pybackend_revised
+
+    env_file:
+      - .env.docker
+
+    ports:
+      - "8002:8002"
+
+    restart: unless-stopped
+
+    networks:
+      - backend_network
+
+networks:
+  backend_network:
+    external: true

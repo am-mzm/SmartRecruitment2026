@@ -1,0 +1,65 @@
+{
+  "name": "cloudresourcing",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@azure/msal-react": "^3.0.2",
+    "@emailjs/browser": "^4.3.3",
+    "@fortawesome/fontawesome-svg-core": "^6.5.2",
+    "@fortawesome/free-solid-svg-icons": "^6.5.2",
+    "@fortawesome/react-fontawesome": "^0.2.0",
+    "@popperjs/core": "^2.11.8",
+    "@react-email/render": "^0.0.14",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@tinymce/tinymce-react": "^5.0.1",
+    "body-parser": "^1.20.2",
+    "bootstrap": "^5.3.3",
+    "docx-preview": "^0.3.5",
+    "html-to-text": "^9.0.5",
+    "leaflet": "^1.9.4",
+    "path-browserify": "^1.0.1",
+    "react": "^18.3.1",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-bootstrap": "^2.10.9",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.4.0",
+    "react-leaflet": "^4.2.1",
+    "react-loader-spinner": "^6.1.6",
+    "react-modal": "^3.16.3",
+    "react-router-dom": "^6.23.1",
+    "react-scripts": "5.0.1",
+    "react-toastify": "^11.0.3",
+    "react-tooltip": "^5.28.0",
+    "tinymce": "^7.1.1",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+  }
+}

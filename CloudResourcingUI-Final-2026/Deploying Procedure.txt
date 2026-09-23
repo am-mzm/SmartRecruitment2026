@@ -1,0 +1,10 @@
+Deploying Procedure:
+
+1. Download the CloudResourcingDeployment folder where you will find the "build", "dist", "node_modules", ".env", and a "web.config" file
+2. Download the CloudResourcingWithChatbot-Changes(tsx) folder which will is the codebase.
+3. Before deploying setup the codebase that was downloaded and set it up(create node_modules folders).
+4. These node_modules folders for the frontend and backend needs to be merged into the CloudResourcingDeployment folder so create a folder and copy both of them into it
+5. Next in CloudResourcingWithChatbot-Changes(tsx) project you will see a .env file for the root project directory and backend directory there if you are inclined to make changes you can do so.
+6. However, those changes must be saved and then you must run "npm run build"
+7. Now with those new build folders you must copy them and replace them with the current build and dist folders
+8. Now that you have the deployed code updated with the new changes to the .env variables the deployed website should reflect on these changes.
