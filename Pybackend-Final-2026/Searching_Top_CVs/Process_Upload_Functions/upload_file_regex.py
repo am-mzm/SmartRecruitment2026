@@ -1,3 +1,4 @@
+import tempfile
 """
 /******************************************************************************************************************************************************************************
  *
@@ -39,6 +40,7 @@ import time
 from io import BytesIO
 import nltk
 from nltk.tokenize import word_tokenize
+import employment_layout_ollama_validator_v1 as employment_validator
 
 load_dotenv()
 
@@ -198,11 +200,50 @@ def parse_single_date(date_str, current_date):
         print(f"Parsing date: {date_str}")
 
         # Handle "Present" or "Current"
-        if date_str in ["Present", "PRESENT", "Current", "CURRENT", "To Date", "TO DATE", "Actually", "ACTUALLY"]:
+        if re.fullmatch(
+            r"(?i)(?:Present|Current|Today|Ongoing|Now|To\s+Date|Till\s+Date|Till\s+Now|Continued|Continuing|Until\s+Date|Until\s+Now)",
+            date_str.strip()
+        ):
             return current_date
         
         # if date_str.lower() in ["present", "current", "to date"]:
         #     return current_date
+
+        # Handle numeric month/two-digit-year formats (e.g., "9/21", "08/20").
+        short_numeric_match = re.fullmatch(r'(0?[1-9]|1[0-2])/(\d{2})', date_str.strip())
+        if short_numeric_match:
+            month = int(short_numeric_match.group(1))
+            short_year = int(short_numeric_match.group(2))
+            year = 2000 + short_year if short_year <= 50 else 1900 + short_year
+            if 1900 <= year <= current_date.year:
+                return datetime(year, month, 1)
+            return None
+
+        # Normalize curly apostrophe before the existing apostrophe parser.
+        date_str = date_str.replace('’', "'")
+
+        # V3: corpus-backed short month/year normalization.
+        # Examples: Sept 20, Nov-19, Feb '00, July'18.
+        short_month_match = re.fullmatch(
+            r"(?i)(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s*[-/' ]?\s*(\d{2})",
+            date_str.strip()
+        )
+        if short_month_match:
+            month_text = re.sub(r'(?i)^Sept$', 'Sep', short_month_match.group(1))
+            short_year = int(short_month_match.group(2))
+            year = 2000 + short_year if short_year <= 50 else 1900 + short_year
+            try:
+                month_num = datetime.strptime(month_text[:3], "%b").month
+                if 1900 <= year <= current_date.year:
+                    return datetime(year, month_num, 1)
+                # V5: this token was conclusively recognized as month + two-digit
+                # year.  If that year is outside the accepted range (for example
+                # "Feb 29" -> Feb 2029 while current year is earlier), stop here.
+                # Do not fall through to dateutil, which can reinterpret 29 as a
+                # day-of-month and raise "day is out of range for month".
+                return None
+            except ValueError:
+                return None
 
         # Handle year-only formats (e.g., "2015")
         if re.match(r'^\d{4}$', date_str):
@@ -251,378 +292,152 @@ def parse_single_date(date_str, current_date):
         return None
 
 def calculate_experience(resume_text, exclude_volunteer=True):
-    """Calculate total years of experience from the resume text."""
-    # Define the section headers to look for
-    experience_section = re.search(
-        r'(?i)(WORK EXPERIENCE|EXPERIENCE|PROFESSIONAL EXPERIENCE|WORK HISTORY|EMPLOYMENT HISTORY|Work Experience).*?(\n\n|\Z)',
-        resume_text,
-        re.DOTALL
+    """Calculate non-overlapping employment experience from validated work sections."""
+    # Use the same structural section detector as job-title extraction.  A large
+    # max_lines value is intentional here: title extraction needs only recent
+    # context, while total experience must retain the candidate's full career.
+    experience_text = extract_experience_section(resume_text, max_lines=10000)
+
+    if not experience_text or not experience_text.strip():
+        print("No validated experience section found for experience calculation.")
+        return 0.0
+
+    month = (
+        r'(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|'
+        r'Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|'
+        r'Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?'
     )
-    experience_text = experience_section.group(0) if experience_section else resume_text
-    
-    experience_headers = [
-        r'WORK\s+EXPERIENCE',
-        r'EXPERIENCE',
-        r'EXPERIENCES',
-        r'PROFESSIONAL\s+EXPERIENCE',
-        r'WORK\s+HISTORY',
-        r'EMPLOYMENT\s+HISTORY',
-        r'CAREER\s+HISTORY',
-        r'JOB\s+HISTORY',
-        r'WORK\s+BACKGROUND',
+    current_terms = (
+        r'(?:Present|Current|Today|Ongoing|Now|To\s+Date|'
+        r'Till\s+Date|Till\s+Now|Continued|Continuing|Until\s+Date|Until\s+Now)'
+    )
+    date_token = (
+        rf'(?:{month}\s*,?\s*\d{{4}}|'
+        rf'{month}\s*[\'’]\d{{2}}|'
+        rf'{month}\s*[- ]\s*\d{{2}}|'
+        rf'(?:0?[1-9]|1[0-2])/\d{{4}}|'
+        rf'(?:0?[1-9]|1[0-2])/\d{{2}}|'
+        rf'(?:19|20)\d{{2}}|'
+        rf'{current_terms})'
+    )
 
-        r'VOLUNTEERING\s+AND\s+WORK\s+EXPERIENCE',
-        r'VOLUNTEER\s+AND\s+WORK\s+EXPERIENCE',
-        r'WORK\s+AND\s+VOLUNTEER\s+EXPERIENCE',
-        r'WORK\s+AND\s+VOLUNTEERING\s+EXPERIENCE',
-
-        # Leadership / volunteering sections can contain
-        # legitimate dated occupational roles.
-        r'LEADERSHIP\s*(?:&|AND)\s*VOLUNTEERING',
-        r'LEADERSHIP\s*(?:&|AND)\s*VOLUNTEER\s+EXPERIENCE',
-        r'LEADERSHIP',
-    ]
-
-    exclude_keywords = [
-        r"\bProjects\b", r"\bPROJECTS\b",
-        r"\bVolunteer\b", r"\bVOLUNTEER\b",
-        r"\bExtracurricular\b", r"\bEXTRACURRICULAR\b", # Just Added at 17/03/2025 at 4:25 pm
-        r"\bCommunity Service\b", r"\bScouts\b",
-        r"\bAwards\b", r"\bAWARDS\b", # Just Added at 17/03/2025 at 4:37 pm
-        r"\bUNOFFICIAL\b", # Just Added at 18/03/2025 at 9:56 AM
-        r"Education(?:\s+and\s+Academic\s+Achievements)?",
-        r"EDUCATION(?:\s+AND\s+ACADEMIC\s+ACHIEVEMENTS)?",       
-        r"\bSkills\b", r"\bSKILLS\b",
-        r"\bCertifications\b", r"\bCERTIFICATIONS\b",
-        r"\bLicenses\b", r"\bLICENSES\b",
-        r"\bAssessments\b", r"\bASSESSMENTS\b",
-        r"\bQualifications\b", r"\bQUALIFICATIONS\b",
-        r"\bWork Term\b", r"\bPlanned Future Work Term\(s\)\b",
-        r"\bAcademic\b", r"\bACADEMIC\b",
-        r"\bEducation(?:\s+and\s+Academic\s+Achievements)?\b"
-    ]
-
-    date_pattern = r"""
-    (?:(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sept(?:ember)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s*,?\s*\d{4})  # Month name and year with optional comma and space
-    |
-    (?:[A-Za-z]{3,9}’\d{2})  # Month and year with apostrophe (e.g., "May’07")
-    |
-    (?:\d{4})  # Year only
-    |
-    (?:(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sept(?:ember)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s*,?\s*\d{4}\s*[-–to\s\n]+\s*(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sept(?:ember)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s*,?\s*\d{4})  # Date range with optional comma and space
-    |
-    (?:\d{2}/\d{4})  # Month/Year format (e.g., "07/2024")
-    |
-    (?:\(\d{2}/\d{4}\))
-    |
-    (?:\bPresent\b|\bPRESENT\b|\bCurrent\b|\bCURRENT\b|\bTill Date\b|\bTO DATE\b|\bTo Date\b|\bActually\b|\bACTUALLY\b)  # Present, Current, Till Date, or To Date
-    """
-
-    date_matches = list(re.finditer(date_pattern, experience_text, re.VERBOSE))
-
-    # Debugging: Print the dates found
+    date_matches = list(re.finditer(date_token, experience_text, re.IGNORECASE))
     logging.info(f"Dates Found: {[match.group(0) for match in date_matches]}")
     print(f"Dates Found: {[match.group(0) for match in date_matches]}")
 
     intervals = []
     current_date = datetime.now()
 
-    for i in range(len(date_matches)):
-        start_date_str = date_matches[i].group(0)
+    for i in range(len(date_matches) - 1):
+        start_match = date_matches[i]
+        end_match = date_matches[i + 1]
+        between_dates = experience_text[start_match.end():end_match.start()]
+
+        if not re.fullmatch(r'\s*(?:[-\u2013\u2014]|to)\s*', between_dates, re.IGNORECASE):
+            continue
+
+        start_date_str = start_match.group(0)
+        end_date_str = end_match.group(0)
         start_date = parse_single_date(start_date_str, current_date)
-        if start_date is None:
-            continue  # Skip invalid start dates
-        print(f"Parsed Start Date: {start_date} from {start_date_str}")
+        end_date = parse_single_date(end_date_str, current_date)
 
-        # Check if the start date has " -" or " to" beside it
-        #if not re.search(rf'{re.escape(start_date_str)}\s*[-–to]', experience_text):
-        #    print(f"Skipping start date without interval indicator: {start_date_str}")
-        #    continue  # Skip if it doesn't indicate an interval
-        #print(f"Valid Start Date: {start_date} from {start_date_str}")
-        # Above will be replaces by bottom code
-        
-        # A valid employment interval must have an adjacent end-date match
-        # physically connected to the start date by a range separator.
-        if i + 1 >= len(date_matches):
-            print(f"Skipping start date without adjacent end date: {start_date_str}")
+        if start_date is None or end_date is None:
+            continue
+        if end_date < start_date:
+            print(f"Skipping reversed employment interval: {start_date_str} -> {end_date_str}")
             continue
 
-        between_dates = experience_text[
-            date_matches[i].end():date_matches[i + 1].start()
-        ]
+        interval = (start_date, end_date)
+        if interval not in intervals:
+            intervals.append(interval)
+            print(f"Added interval: {start_date} to {end_date}")
 
-        if not re.fullmatch(
-            r'\s*(?:[-\u2013\u2014]|to)\s*',
-            between_dates,
-            re.IGNORECASE
+    # Supplemental conservative scan across the complete resume.  This recovers
+    # older employment blocks that appear after an intervening EDUCATION/SKILLS
+    # section without forcing the title extractor to treat those sections as one
+    # continuous experience section.  A date range alone is never sufficient:
+    # nearby occupational/explicit-role evidence is required and obvious
+    # non-employment contexts are rejected.
+    supplemental_range = re.compile(
+        rf'(?i)\b(?P<start>{date_token})\s*(?:[-\u2013\u2014]|to)\s*'
+        rf'(?P<end>{date_token})\b'
+    )
+    role_evidence = re.compile(
+        r'(?i)\b(?:position|job\s*title|role|title)\s*[:\-]|'
+        r'\b(?:architect|engineer|developer|analyst|manager|consultant|'
+        r'administrator|specialist|technician|director|lead|coordinator|'
+        r'officer|supervisor|scientist|programmer|associate|assistant|'
+        r'intern|president|founder|owner|instructor|advisor|executive)\b'
+    )
+    non_employment_context = re.compile(
+        r'(?i)\b(?:education|academic|degree|bachelor|master|phd|doctorate|'
+        r'certification|certificate|volunteer|award|training|course)\b'
+    )
+
+    for match in supplemental_range.finditer(resume_text):
+        start_date = parse_single_date(match.group('start'), current_date)
+        end_date = parse_single_date(match.group('end'), current_date)
+        if start_date is None or end_date is None or end_date < start_date:
+            continue
+
+        context_start = max(0, match.start() - 300)
+        context_end = min(len(resume_text), match.end() + 300)
+        context = resume_text[context_start:context_end]
+
+        if not role_evidence.search(context):
+            continue
+
+        # Reject an interval only when non-employment evidence is close to the
+        # date and no explicit role/title label is present.  This avoids losing
+        # legitimate jobs at universities/banks while still filtering degrees,
+        # certifications and project timelines.
+        tight_start = max(0, match.start() - 120)
+        tight_end = min(len(resume_text), match.end() + 120)
+        tight_context = resume_text[tight_start:tight_end]
+
+        # Academic/certification/volunteer evidence close to the date wins over
+        # occupational words inherited from a neighboring employment record.
+        # An explicit Position/Role/Job Title label in the same tight context is
+        # the only override.
+        if non_employment_context.search(tight_context) and not re.search(
+            r'(?i)\b(?:position|job\s*title|role|title)\s*[:\-]', tight_context
         ):
-            print(
-                f"Skipping non-adjacent date pair: "
-                f"{start_date_str} ... {date_matches[i + 1].group(0)}"
-            )
             continue
 
-        print(
-            f"Valid structural date range: "
-            f"{start_date_str} {between_dates.strip()} "
-            f"{date_matches[i + 1].group(0)}"
-        )
-
-        preceding_text = experience_text[:date_matches[i].start()]
-        start_excluded_keyword_found = False
-        start_experience_header_found = False
-
-        # print(f"Preceding text: {preceding_text}")
-
-        # Check for excluded section headings.
-        #
-        # An excluded keyword should count only when it appears as a
-        # structural heading/line, not merely as a word inside normal
-        # resume content such as:
-        #
-        #   Kumon Institute of Education Co. Ltd.
-        #
-        # This prevents employer names and prose from being mistaken
-        # for EDUCATION / SKILLS / PROJECTS section boundaries.
-        keyword_end_positions = []
-
-        for keyword in exclude_keywords:
-
-            heading_pattern = re.compile(
-                rf'(?im)^[ \t]*{keyword}[ \t]*[:\-]?[ \t]*$'
-            )
-
-            for m in heading_pattern.finditer(preceding_text):
-                keyword_end_positions.append(m.end())
-                start_excluded_keyword_found = True
-
-                print(
-                    f"Found excluded section heading "
-                    f"'{keyword}' before date: {start_date_str}"
-                )
-
-        # Check for experience headers
-        header_end_positions = []
-
-        for header in experience_headers:
-
-            heading_pattern = re.compile(
-                rf'(?im)^[ \t]*{header}[ \t]*[:\-]?[ \t]*$'
-            )
-            
-            for m in heading_pattern.finditer(preceding_text):
-
-                header_end_positions.append(m.end())
-                start_experience_header_found = True
-
-                print(
-                    f"Found structural experience header "
-                    f"'{header}' before date: {start_date_str}"
-                )
-
-        if start_excluded_keyword_found and start_experience_header_found:
-            # Calculate the distance from the end of the keyword or header to the start of the date
-            if keyword_end_positions:
-                last_keyword_end_pos = max(keyword_end_positions)
-            if header_end_positions:
-                last_header_end_pos = max(header_end_positions)
-            
-            keyword_distance = date_matches[i].start() - last_keyword_end_pos
-            header_distance = date_matches[i].start() - last_header_end_pos
-            
-            if keyword_distance < header_distance:
-                print(f"Keyword is closer to the date than the header, skipping date: {start_date_str}")
-                continue  # Skip if the keyword is closer to the date than the header
-            else:
-                print(f"Header is closer to the date than the keyword, continuing with date: {start_date_str}")
-
-        elif start_excluded_keyword_found:
-            print(f"No experience header found before date: {start_date_str}, skipping")
+        # Likewise reject a PROJECT(S) section heading immediately around the
+        # date, but do not reject legitimate titles such as Project Manager.
+        if re.search(r'(?im)^\s*projects?\s*$', tight_context) and not re.search(
+            r'(?i)\b(?:position|job\s*title|role|title)\s*[:\-]', tight_context
+        ):
             continue
 
-        elif not start_experience_header_found:
-            print(
-                f"No structural experience header before date: "
-                f"{start_date_str}, skipping"
-            )
-            continue
+        interval = (start_date, end_date)
+        if interval not in intervals:
+            intervals.append(interval)
 
-        # Ensure i + 1 is within the bounds of the date_matches list
-        if i + 1 < len(date_matches):
-            end_date_str = date_matches[i + 1].group(0)
-            end_date = parse_single_date(end_date_str, current_date)
-            
-            if end_date is None:
-                print(f"End date is None for {end_date_str}")
-            elif end_date < start_date:
-                print(f"End date {end_date} is earlier than start date {start_date}")
-                end_date = datetime(start_date.year + 1, start_date.month, start_date.day)
-                i -= 1  # Adjust the index to reprocess the next date as a start date
-            
-            if not re.search(rf'[-–to]\s*{re.escape(end_date_str)}', experience_text):
-                print(
-                    f"Skipping interval because end date has no interval indicator: "
-                    f"{start_date_str} -> {end_date_str}"
-                )
-                continue
-    
-        else:
-            # end_date = current_date  # Assume "Present" as the end date for the last job
-            end_date = datetime(start_date.year + 1, start_date.month, start_date.day)
-        print(f"Parsed End Date: {end_date} from {end_date_str if i + 1 < len(date_matches) else 'Present'}")
-
-        # Check if the date is under an excluded section after parsing the end date
-        if i + 1 < len(date_matches):
-            preceding_text = experience_text[:date_matches[i + 1].start()]  # Change to check end date
-            end_excluded_keyword_found = False
-            end_experience_header_found = False
-
-            # Check for excluded section headings.
-            #
-            # An excluded keyword should count only when it appears as a
-            # structural heading/line, not merely as a word inside normal
-            # resume content or an employer name such as:
-            #
-            #   Kumon Institute of Education Co. Ltd.
-            keyword_end_positions = []
-
-            for keyword in exclude_keywords:
-
-                heading_pattern = re.compile(
-                    rf'(?im)^[ \t]*{keyword}[ \t]*[:\-]?[ \t]*$'
-                )
-
-                for m in heading_pattern.finditer(preceding_text):
-                    keyword_end_positions.append(m.end())
-                    end_excluded_keyword_found = True
-
-                    print(
-                        f"Found excluded section heading "
-                        f"'{keyword}' before date: {end_date_str}"
-                    )
-
-            # Check for experience headers
-            header_end_positions = []
-
-            for header in experience_headers:
-
-                heading_pattern = re.compile(
-                    rf'(?im)^[ \t]*{header}[ \t]*[:\-]?[ \t]*$'
-                )
-
-                for m in heading_pattern.finditer(preceding_text):
-
-                    header_end_positions.append(m.end())
-                    end_experience_header_found = True
-
-                    print(
-                        f"Found structural experience header "
-                        f"'{header}' before date: {end_date_str}"
-                    )
-
-            if end_excluded_keyword_found and end_experience_header_found:
-                # Calculate the distance from the end of the keyword or header to the start of the date
-                if keyword_end_positions:
-                    last_keyword_end_pos = max(keyword_end_positions)
-                if header_end_positions:
-                    last_header_end_pos = max(header_end_positions)
-                
-                keyword_distance = date_matches[i + 1].start() - last_keyword_end_pos
-                header_distance = date_matches[i + 1].start() - last_header_end_pos
-                
-                if keyword_distance < header_distance:
-                    print(f"Keyword is closer to the date than the header, skipping date: {end_date_str}")
-                    continue  # Skip if the keyword is closer to the date than the header
-                else:
-                    print(f"Header is closer to the date than the keyword, continuing with date: {end_date_str}")
-            elif end_excluded_keyword_found:
-                print(f"No experience header found before date: {end_date_str}, skipping")
-                continue  # Skip if no experience header appears before the current date
-
-        if start_date and end_date:
-
-            interval = (start_date, end_date)
-
-            if interval not in intervals:
-                intervals.append(interval)
-                print(f"Added interval: {start_date} to {end_date}")
-            else:
-                print(
-                    f"Skipping duplicate interval: "
-                    f"{start_date} to {end_date}"
-                )
-
-    # ---------------------------------------------------------
-    # Merge overlapping or contiguous employment intervals
-    # before calculating total experience.
-    #
-    # This prevents concurrent/overlapping roles from inflating
-    # total calendar experience.
-    #
-    # Example:
-    #
-    #   Sep 2020 - Jun 2023
-    #   Oct 2021 - Jun 2023
-    #
-    # becomes:
-    #
-    #   Sep 2020 - Jun 2023
-    # ---------------------------------------------------------
-
+    # Preserve the existing behavior that overlapping/concurrent jobs count only
+    # once toward total calendar experience.
     merged_intervals = []
-
-    for start_date, end_date in sorted(
-        intervals,
-        key=lambda interval: interval[0]
-    ):
-
+    for start_date, end_date in sorted(intervals, key=lambda interval: interval[0]):
         if not merged_intervals:
-
-            merged_intervals.append(
-                [start_date, end_date]
-            )
-
+            merged_intervals.append([start_date, end_date])
             continue
-
         last_start, last_end = merged_intervals[-1]
-
         if start_date <= last_end:
-
-            # Overlapping or touching interval.
-            # Extend the existing interval only when necessary.
             if end_date > last_end:
                 merged_intervals[-1][1] = end_date
-
-            print(
-                f"Merged overlapping interval: "
-                f"{start_date} to {end_date}"
-            )
-
         else:
-
-            merged_intervals.append(
-                [start_date, end_date]
-            )
-
+            merged_intervals.append([start_date, end_date])
 
     total_experience = relativedelta()
-
     for start_date, end_date in merged_intervals:
+        total_experience += relativedelta(end_date, start_date)
 
-        interval_experience = relativedelta(
-            end_date,
-            start_date
-        )
-
-        print(
-            f"Merged interval: "
-            f"{start_date} to {end_date}, "
-            f"Experience: {interval_experience}"
-        )
-
-        total_experience += interval_experience
-
-    total_years = total_experience.years + (total_experience.months / 12) + (total_experience.days / 365.25)
+    total_years = (
+        total_experience.years
+        + (total_experience.months / 12)
+        + (total_experience.days / 365.25)
+    )
     print(f"Total Experience: {total_experience}, Total Years: {total_years}")
     return max(round(total_years, 2), 0)
 
@@ -2848,6 +2663,63 @@ def post_process_job_titles(job_titles):
             filtered_job_titles.append(title)
     return filtered_job_titles
 
+def extract_previous_job_titles_docx(resume_text):
+    """
+    High-confidence DOCX structural extraction.
+
+    Uses explicit Position: lines when available.
+    First Position is the current title and is excluded.
+    Existing extract_previous_job_titles() remains the fallback.
+    """
+    try:
+        positions = []
+
+        for line in resume_text.splitlines():
+            match = re.match(r'(?i)^\s*position\s*:\s*(.+?)\s*$', line)
+            if not match:
+                continue
+
+            title = match.group(1).strip()
+
+            # Remove employer/contract suffix.
+            title = re.sub(
+                r'(?i)\s*[–—-]\s*Contractor\s+at\s+.+$',
+                '',
+                title
+            )
+
+            # Remove remote-work annotation.
+            title = re.sub(
+                r'(?i)\s*\(\s*100%\s*Remote\s*Work\s*\)\s*$',
+                '',
+                title
+            )
+
+            title = title.strip()
+
+            if title:
+                positions.append(title)
+
+        # Need current + at least one previous position.
+        if len(positions) >= 2:
+            previous_titles = positions[1:]
+            result = "~~".join(previous_titles)
+
+            print(
+                f"DOCX structural previous job titles: {result}"
+            )
+            return result
+
+        # Preserve existing behavior for other DOCX formats.
+        return extract_previous_job_titles(resume_text)
+
+    except Exception as e:
+        print(
+            f"DOCX structural previous-title extraction error: {e}"
+        )
+        return extract_previous_job_titles(resume_text)
+
+
 def extract_previous_job_titles(resume_text):
     """
     Extracts job titles from the resume text, processes them, and returns them
@@ -3303,7 +3175,7 @@ def extract_most_recent_job_title(resume_text, return_details=False):
             r'\s*[-–—]\s*'
             r'((?:19|20)\d{2})'
             r'\s+(?:to\s+)?'
-            r'(Present|Current|Now|To\s+Date|Till\s+Date|Till\s+Now|Continued|Continuing)\b',
+            r'(Present|Current|Now|Today|Ongoing|To\s+Date|Till\s+Date|Till\s+Now|Continued|Continuing|Until\s+Date|Until\s+Now)\b',
             r'\1 \2 - \3',
             normalized_line
         )
@@ -3369,7 +3241,7 @@ def extract_most_recent_job_title(resume_text, return_details=False):
         # CurrentCompanyName
         line = re.sub(
             r'('
-            r'Present|Current|Now|'
+            r'Present|Current|Now|Today|Ongoing|'
             r'To\s+Date|Till\s+Date|Till\s+Now|'
             r'Continued|Continuing'
             r')'
@@ -3436,6 +3308,8 @@ def extract_most_recent_job_title(resume_text, return_details=False):
         r'Present|'
         r'Current|'
         r'Now|'
+        r'Today|'
+        r'Ongoing|'
         r'To\s+Date|'
         r'Till\s+Date|'
         r'Till\s+Now|'
@@ -3962,6 +3836,8 @@ def extract_most_recent_job_title(resume_text, return_details=False):
                 r'(?i)\b(?:'
                 r'Present|'
                 r'Current|'
+                r'Today|'
+                r'Ongoing|'
                 r'Now|'
                 r'To\s+Date|'
                 r'Till\s+Date|'
@@ -4867,6 +4743,8 @@ def extract_most_recent_job_title(resume_text, return_details=False):
                     r'(?i)\b(?:'
                     r'Present|'
                     r'Current|'
+                    r'Today|'
+                    r'Ongoing|'
                     r'Now|'
                     r'To\s+Date|'
                     r'Till\s+Date|'
@@ -9323,6 +9201,327 @@ def extract_most_recent_job_title(resume_text, return_details=False):
     ).strip()
 
     # ---------------------------------------------------------
+    # Final title sanitation before validation.
+    #
+    # Keep this gate deterministic and structural.  Do not require a title to
+    # contain a word from a finite occupational dictionary: legitimate titles
+    # such as IT Support, Senior Staff, Collections Agent, SQL/Oracle DBA, and
+    # Freelance Photographer must remain eligible.
+    # ---------------------------------------------------------
+
+    # Clean explicit role/title labels before any rejection checks.
+    # Examples: "Role: Sr. DevOps Engineer" -> "Sr. DevOps Engineer".
+    best_title = re.sub(
+        r'(?i)^\s*(?:current\s+role|project\s+role|key\s+role|job\s+title|'
+        r'role|position|title)\s*(?::|[-–—|])\s*',
+        '',
+        best_title
+    ).strip()
+
+    # Repair common glued section headings only when meaningful CamelCase-like
+    # title text follows immediately.
+    best_title = re.sub(
+        r'(?i)^(?:professional\s*experience|work\s*experience|employment\s*experience|'
+        r'experience|education|technical\s*skills)(?=[A-Z][a-z])',
+        '',
+        best_title
+    ).strip()
+
+    compact_final_title = re.sub(
+        r'\s+', ' ', best_title
+    ).strip(' -–—|,:;()').lower()
+
+    # V4: If the selected candidate collapsed to a bare Role/Position/Title
+    # label, recover an already-scored explicit label/value candidate BEFORE
+    # exact-label rejection.  This fixes layouts such as:
+    #     Role: Sr. DevOps Engineer
+    # without generating or rescoring any new candidate.
+    if compact_final_title in {'role', 'position', 'job title', 'title'}:
+        for fallback_candidate in scored_candidates:
+            fallback_match = re.match(
+                r'(?i)^\s*(?:current\s+role|project\s+role|key\s+role|job\s+title|'
+                r'role|position|title)\s*(?::|[-–—|])\s*(.+?)\s*$',
+                fallback_candidate.get('text', '')
+            )
+            if not fallback_match:
+                continue
+            fallback_title = fallback_match.group(1).strip(' -–—|,:;()')
+            fallback_words = re.findall(r"[A-Za-z][A-Za-z0-9&+.'/-]*", fallback_title)
+            if fallback_title and 1 <= len(fallback_words) <= 10:
+                best_candidate = fallback_candidate
+                best_title = fallback_title
+                compact_final_title = re.sub(r'\s+', ' ', best_title).strip(' -–—|,:;()').lower()
+                break
+
+    # V5: conservative recovery from already-scored title evidence.
+    #
+    # Some layouts score an adjacent employer/location line above the actual
+    # occupational title, or reduce an explicit Role:/Position:/Job Title: line
+    # to its field label.  Before rejecting such a selected candidate, inspect
+    # ONLY candidates that the existing scorer already produced.  This does not
+    # create candidates or change scores/thresholds.
+    v5_role_terms = {
+        'developer', 'consultant', 'engineer', 'architect', 'analyst', 'manager',
+        'administrator', 'specialist', 'technician', 'director', 'lead',
+        'coordinator', 'officer', 'supervisor', 'agent', 'instructor', 'recruiter',
+        'master', 'pm', 'accountant', 'auditor', 'clerk', 'cashier', 'scientist',
+        'programmer', 'advisor', 'executive', 'associate', 'assistant', 'intern'
+    }
+
+    def _v5_clean_scored_title(candidate_text):
+        text = re.sub(r'\s+', ' ', str(candidate_text or '')).strip()
+        explicit = re.search(
+            r'(?i)(?:^|[|;])\s*(?:current\s+role|project\s+role|key\s+role|job\s*title|role|position|title)'
+            r'\s*(?::|[-–—|])\s*([^|;]+)',
+            text
+        )
+        if explicit:
+            text = explicit.group(1).strip()
+        else:
+            text = re.sub(
+                r'(?i)^\s*(?:current\s+role|project\s+role|key\s+role|job\s*title|role|position|title)'
+                r'\s*(?::|[-–—|])\s*', '', text
+            ).strip()
+        # Remove a trailing date range only when clearly separated from title text.
+        text = re.sub(
+            r'(?i)\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|'
+            r'Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s*'
+            r'(?:[-/\'’ ]?\d{2}|,?\s*\d{4}).*$', '', text
+        ).strip(' -–—|,:;()')
+        return text
+
+    def _v5_is_clean_occupational_title(title, candidate):
+        words = re.findall(r"[A-Za-z][A-Za-z0-9&+.'/-]*", title)
+        if not (1 <= len(words) <= 10):
+            return False
+        low = title.lower()
+        if low in {
+            'duration', 'employment summary', 'experience summary', 'work history',
+            'work experience', 'professional experience', 'employment history',
+            'technical skills', 'skills', 'professional', 'employment', 'experience',
+            'responsibilities', 'responsibility', 'duties', 'career summary',
+            'career history', 'projects', 'project', 'education', 'remote contract',
+            'contract', 'servant leadership'
+        }:
+            return False
+        if re.match(r'(?i)^\s*(?:duration|client|employer|company|responsibilities?|duties)\b', title):
+            return False
+        if re.search(
+            r'(?i)\b(?:canada|usa|united\s+states|toronto|montreal|montréal|vancouver|'
+            r'calgary|ottawa|ontario|quebec|alberta|british\s+columbia|scarborough)\b',
+            title
+        ) and not any(re.search(rf'(?i)\b{re.escape(term)}\b', low) for term in v5_role_terms):
+            return False
+        return bool(candidate.get('matched_titles')) or any(
+            re.search(rf'(?i)\b{re.escape(term)}\b', low) for term in v5_role_terms
+        )
+
+    selected_needs_recovery = (
+        compact_final_title in {
+            'role', 'position', 'job title', 'title', 'duration', 'work history',
+            'career history', 'experience', 'professional experience', 'work experience'
+        }
+        or (
+            bool(re.search(
+                r'(?i)\b(?:canada|toronto|montreal|montréal|vancouver|calgary|ottawa|'
+                r'ontario|quebec|alberta|british\s+columbia|scarborough)\b',
+                best_title
+            ))
+            and not _v5_is_clean_occupational_title(best_title, best_candidate)
+        )
+    )
+
+    if selected_needs_recovery:
+        recovery_options = []
+        for candidate in scored_candidates:
+            recovered = _v5_clean_scored_title(candidate.get('text', ''))
+            if not _v5_is_clean_occupational_title(recovered, candidate):
+                continue
+            explicit_bonus = 40 if re.search(
+                r'(?i)\b(?:job\s*title|role|position|title)\s*(?::|[-–—|])',
+                candidate.get('text', '')
+            ) else 0
+            recovery_options.append((candidate.get('score', 0) + explicit_bonus, candidate, recovered))
+        if recovery_options:
+            recovery_options.sort(key=lambda item: item[0], reverse=True)
+            _, recovered_candidate, recovered_title = recovery_options[0]
+            best_candidate = recovered_candidate
+            best_title = recovered_title
+            compact_final_title = re.sub(r'\s+', ' ', best_title).strip(' -–—|,:;()').lower()
+
+    # Exact section/field labels are never job titles.
+    non_title_exact = {
+        'duration', 'employment summary', 'experience summary', 'work history',
+        'work experience', 'professional experience', 'employment history',
+        'technical skills', 'skills', 'professional', 'employment', 'experience',
+        'responsibilities', 'responsibility', 'duties', 'career summary',
+        'career history', 'projects', 'project', 'education', 'remote contract',
+        'contract', 'servant leadership'
+    }
+    if compact_final_title in non_title_exact:
+        return _format_job_title_result(
+            'N/A', confidence='LOW', score=best_candidate.get('score', 0),
+            source=best_candidate.get('source', 'none'),
+            reason='selected_candidate_is_section_or_field_label'
+        )
+
+    # A Responsibilities:/Duties: line describes work performed, not the role.
+    # Reject the whole candidate rather than stripping the label and promoting
+    # the duty text into a job title.
+    if re.match(
+        r'(?i)^\s*(?:responsibilities?|duties)\s*(?::|[-–—|])',
+        best_title
+    ):
+        return _format_job_title_result(
+            'N/A', confidence='LOW', score=best_candidate.get('score', 0),
+            source=best_candidate.get('source', 'none'),
+            reason='selected_candidate_is_responsibility_or_duties_text'
+        )
+
+    # If the selected text collapsed to a bare field label (for example
+    # "Role"), recover only from an already-scored candidate that explicitly
+    # carries Role:/Position:/Job Title: plus a non-empty value.  This does not
+    # generate or rescore candidates; it only sanitizes existing title evidence.
+    if compact_final_title in {'role', 'position', 'job title', 'title'}:
+        for fallback_candidate in scored_candidates:
+            fallback_match = re.match(
+                r'(?i)^\s*(?:current\s+role|project\s+role|key\s+role|job\s+title|'
+                r'role|position|title)\s*(?::|[-–—|])\s*(.+?)\s*$',
+                fallback_candidate.get('text', '')
+            )
+            if not fallback_match:
+                continue
+            fallback_title = fallback_match.group(1).strip(' -–—|,:;()')
+            fallback_words = re.findall(r"[A-Za-z][A-Za-z0-9&+.'/-]*", fallback_title)
+            if fallback_title and 1 <= len(fallback_words) <= 10:
+                best_candidate = fallback_candidate
+                best_title = fallback_title
+                compact_final_title = re.sub(r'\s+', ' ', best_title).strip(' -–—|,:;()').lower()
+                break
+
+    # V4: Duration-prefixed text is a field/value fragment, never a job title.
+    # This catches collapsed layouts such as "Duration Offshore: ... Onsite: ..."
+    # even when only one explicit field label survived extraction.
+    if re.match(r'(?i)^\s*duration\b', best_title):
+        return _format_job_title_result(
+            'N/A', confidence='LOW', score=best_candidate.get('score', 0),
+            source=best_candidate.get('source', 'none'),
+            reason='selected_candidate_contains_concatenated_field_text'
+        )
+
+    # V4: When a slash-separated candidate contains a clean occupational title
+    # on the left and an employer/location-shaped fragment on the right, keep
+    # only the occupational prefix.  Do not split legitimate compound titles
+    # such as "Business Analyst / Business System Analyst" unless the right
+    # side carries employer/geography evidence.
+    slash_match = re.match(r'^\s*(.+?)\s*/\s*(.+?)\s*$', best_title)
+    if slash_match:
+        left_part = slash_match.group(1).strip()
+        right_part = slash_match.group(2).strip()
+        left_lower = left_part.lower()
+        right_lower = right_part.lower()
+        left_has_role = bool(best_candidate.get('matched_titles')) or any(
+            re.search(rf'(?i)\b{re.escape(term)}\b', left_lower)
+            for term in (set(split_layout_title_terms) | {
+                'developer','consultant','engineer','architect','analyst','manager',
+                'administrator','specialist','technician','director','lead',
+                'coordinator','officer','supervisor','agent','instructor','recruiter',
+                'master','pm','accountant','auditor','clerk','cashier','scientist','programmer'
+            })
+        )
+        right_has_employer_or_geo = (
+            any(re.search(rf'(?i)\b{re.escape(term)}\b', right_lower)
+                for term in split_layout_employer_terms)
+            or bool(re.search(
+                r'(?i)\b(?:canada|usa|united\s+states|toronto|montreal|montréal|'
+                r'vancouver|calgary|ottawa|ontario|quebec|alberta|british\s+columbia)\b',
+                right_part
+            ))
+            or bool(re.search(r'(?i)[-–—]\s*[A-Za-z .\'-]+,\s*(?:ON|QC|BC|AB|[A-Z]{2})\b', right_part))
+        )
+        if left_has_role and right_has_employer_or_geo:
+            best_title = left_part
+            compact_final_title = re.sub(r'\s+', ' ', best_title).strip(' -–—|,:;()').lower()
+
+    # Reject concatenated field-record text rather than promoting an embedded
+    # fragment as the job title.  Example: Client: ... Job Title: ... Employer:
+    # ... Duration.  A clean leading Job Title:/Role:/Position: was already
+    # stripped above and therefore is not affected by this check.
+    embedded_field_labels = re.findall(
+        r'(?i)\b(?:client|employer|company|duration|responsibilities?|duties|'
+        r'job\s*title|position|role)\s*:',
+        best_title
+    )
+    if len(embedded_field_labels) >= 2 or re.match(
+        r'(?i)^\s*(?:client|employer|company|duration)\s*:', best_title
+    ):
+        return _format_job_title_result(
+            'N/A', confidence='LOW', score=best_candidate.get('score', 0),
+            source=best_candidate.get('source', 'none'),
+            reason='selected_candidate_contains_concatenated_field_text'
+        )
+
+    # Reject employer/location-shaped values that survived earlier normalization.
+    # Keep this structural: comma/hyphen geography is rejected only when the left
+    # side does not itself look like a normal occupational title.
+    generic_single_word_titles = {
+        'developer', 'consultant', 'engineer', 'architect', 'analyst', 'manager',
+        'administrator', 'specialist', 'technician', 'director', 'lead',
+        'coordinator', 'officer', 'supervisor', 'agent', 'instructor', 'recruiter',
+        'master', 'pm', 'accountant', 'auditor', 'clerk', 'cashier', 'scientist', 'programmer'
+    }
+    location_tail_match = re.match(
+        r'(?i)^\s*(.+?)\s*(?:,|\s[-–—]\s)\s*'
+        r'([A-Za-zÀ-ÿ .\'-]{2,40})(?:,\s*(?:ON|QC|BC|AB|MB|SK|NS|NB|NL|PE|[A-Z]{2}))?\s*$',
+        best_title
+    )
+    if location_tail_match:
+        left_side = location_tail_match.group(1).strip()
+        left_words = re.findall(r"[A-Za-z][A-Za-z0-9&+./'-]*", left_side)
+        left_lower = left_side.lower()
+        left_has_title_signal = bool(best_candidate.get('matched_titles')) or any(
+            re.search(rf'(?i)\b{re.escape(term)}\b', left_lower)
+            for term in (set(split_layout_title_terms) | generic_single_word_titles)
+        )
+        location_tail = location_tail_match.group(2).strip()
+        location_has_geo_evidence = bool(re.search(
+            r'(?i)\b(?:canada|usa|united\s+states|toronto|montreal|montréal|'
+            r'vancouver|calgary|ottawa|ontario|quebec|alberta|british\s+columbia)\b',
+            location_tail
+        )) or bool(re.search(
+            r'(?i)(?:,\s*(?:ON|QC|BC|AB|MB|SK|NS|NB|NL|PE|[A-Z]{2})\b)',
+            best_title
+        ))
+        # A plain two-word occupational title such as "Cashier Supervisor" or
+        # "Collections Agent" must not be rejected merely because the last
+        # word happens to satisfy the old free-text location pattern.
+        if not left_has_title_signal and location_has_geo_evidence:
+            return _format_job_title_result(
+                'N/A', confidence='LOW', score=best_candidate.get('score', 0),
+                source=best_candidate.get('source', 'none'),
+                reason='selected_candidate_is_employer_location'
+            )
+
+    # Single-word, unmatched candidates from weak layout evidence are commonly
+    # employer names.  Preserve a compact set of generic occupational nouns
+    # (Developer, Consultant, etc.) even when the external title dictionary did
+    # not match them; this is an exception to the fragment guard, not a global
+    # title whitelist.
+    final_words = re.findall(r"[A-Za-z][A-Za-z0-9&+./'-]*", best_title)
+    single_word_lower = final_words[0].lower() if len(final_words) == 1 else ''
+    if (
+        len(final_words) == 1
+        and single_word_lower not in generic_single_word_titles
+        and not best_candidate.get('matched_titles')
+        and best_candidate.get('source') in {'same-line-before-date', 'previous-line-1', 'previous-line-2'}
+    ):
+        return _format_job_title_result(
+            'N/A', confidence='LOW', score=best_candidate.get('score', 0),
+            source=best_candidate.get('source', 'none'),
+            reason='selected_candidate_is_unmatched_single_word_fragment'
+        )
+
+    # ---------------------------------------------------------
     # 12. Final validation
     # ---------------------------------------------------------
     # Validate title length using lexical words only.
@@ -9545,10 +9744,10 @@ def extract_education(resume_text):
             "PhD", "Doctorate", "Doctor of Philosophy",
 
             # Master's-level degrees
-            "Master", "Master's", "MSc", "MA", "MBA",
+            "Master", "Master's", "MSc", "M.Sc", "M.Sc.", "MS", "M.S", "M.S.", "MSEE", "MA", "MBA",
 
             # Bachelor's-level degrees
-            "Bachelor", "Bachelor's", "BSc", "BA",
+            "Bachelor", "Bachelor's", "BSc", "B.Sc", "B.Sc.", "BS", "B.S", "B.S.", "BA",
 
             # Associate-level degrees
             "Associate", "Associate's", "AA", "AS", "AAS",
@@ -9703,6 +9902,74 @@ def extract_docx_text_in_document_order(doc):
 
     return "\n".join(text_parts)
 
+def extract_current_company_docx(resume_text):
+    """
+    Extract current company from DOCX resumes using the strong structural
+    pattern: company/employer line immediately preceding a Position: line.
+    """
+    try:
+        lines = [x.strip() for x in resume_text.splitlines()]
+
+        for i, line in enumerate(lines):
+            if not re.match(r'(?i)^Position\s*:\s*', line):
+                continue
+
+            # First Position: occurrence represents the current role.
+            for j in range(i - 1, max(-1, i - 4), -1):
+                company = lines[j].strip()
+
+                if not company:
+                    continue
+
+                # Remove explicit company/employer labels.
+                company = re.sub(
+                    r'(?i)^(?:Company(?:\s+Name)?|Employer)\s*:\s*-?\s*',
+                    '',
+                    company
+                ).strip()
+
+                # Remove parenthesized employment date/location suffix.
+                # Example: Salesforce1 Consulting: (April 2019 - Present) Grand Island, NY
+                company = re.sub(
+                    r'\s*:\s*\((?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|'
+                    r'May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|'
+                    r'Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{4}'
+                    r'\s*[-–—]\s*(?:Present|Current|Today|[^)]*)\).*$', '',
+                    company,
+                    flags=re.IGNORECASE
+                ).strip()
+
+                # Remove trailing date range beginning with a month.
+                company = re.sub(
+                    r'\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|'
+                    r'May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|'
+                    r'Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{4}'
+                    r'\s*[-–—]\s*(?:Present|Current|Today|'
+                    r'(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|'
+                    r'May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|'
+                    r'Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{4})'
+                    r'\s*$',
+                    '',
+                    company,
+                    flags=re.IGNORECASE
+                ).strip()
+
+                # Ahmad-style: COMPANY – City, ST   July 2024 - Today
+                company = re.sub(
+                    r'\s+[–—-]\s+[^,\n]+,\s*[A-Z]{2}\s*$',
+                    '',
+                    company
+                ).strip()
+
+                return company or "N/A"
+
+        return "N/A"
+
+    except Exception as e:
+        print(f"Error extracting current company from DOCX: {e}")
+        return "N/A"
+
+
 def extract_resume_text(resume_path):
     metadata = {
         'filename': os.path.basename(resume_path),
@@ -9715,6 +9982,9 @@ def extract_resume_text(resume_path):
         'candidate_name': 'Unknown',  # Placeholder for candidate name
         'core_technologies': 'N/A',  # Placeholder for core technologies
         'most_recent_job_title': 'N/A',  # Placeholder for most recent job title
+        'current_company': 'N/A',
+        'previous_job_titles': 'N/A',
+        'employment_status': 'REVIEW_REQUIRED',
         'job_title_confidence': 'LOW',
         'job_title_score': 0,
         'job_title_source': 'none',
@@ -9758,12 +10028,34 @@ def extract_resume_text(resume_path):
         experience_years = calculate_experience(text)
         metadata['years_of_experience'] = experience_years
         
-        job_title_details = extract_most_recent_job_title(text, return_details=True)
-        metadata['most_recent_job_title'] = job_title_details['title']
-        metadata['job_title_confidence'] = job_title_details['confidence']
-        metadata['job_title_score'] = job_title_details['score']
-        metadata['job_title_source'] = job_title_details['source']
-        metadata['job_title_requires_review'] = job_title_details['requires_review']
+        if resume_path.lower().endswith(".pdf"):
+            employment = employment_validator.build_deterministic_records(resume_path)
+
+            metadata['most_recent_job_title'] = employment.get('current_job_title') or 'N/A'
+            metadata['current_company'] = employment.get('current_company') or 'N/A'
+            metadata['previous_job_titles'] = "~~".join(
+                employment.get('previous_job_titles', [])
+            ) or 'N/A'
+            metadata['employment_status'] = employment.get('status', 'REVIEW_REQUIRED')
+            metadata['job_title_source'] = 'layout_candidate_engine_v1_3'
+            metadata['job_title_requires_review'] = (
+                metadata['employment_status'] != 'PASS'
+            )
+            metadata['job_title_confidence'] = (
+                'HIGH' if metadata['employment_status'] == 'PASS' else 'REVIEW'
+            )
+            metadata['job_title_score'] = (
+                100 if metadata['employment_status'] == 'PASS' else 0
+            )
+
+        else:
+            metadata['current_company'] = extract_current_company_docx(text)
+            job_title_details = extract_most_recent_job_title(text, return_details=True)
+            metadata['most_recent_job_title'] = job_title_details['title']
+            metadata['job_title_confidence'] = job_title_details['confidence']
+            metadata['job_title_score'] = job_title_details['score']
+            metadata['job_title_source'] = job_title_details['source']
+            metadata['job_title_requires_review'] = job_title_details['requires_review']
 
     except Exception as e:
         print(f"Error processing {resume_path}: {e}")
@@ -9866,6 +10158,8 @@ def extract_resume_text_from_stream(file_stream, file_name, last_modified):
         'job_title_source': 'none',
         'job_title_requires_review': True,
         'previous_job_titles': 'N/A',
+        'current_company': 'N/A',
+        'employment_status': 'REVIEW_REQUIRED',
         'education': 'N/A',
         'last_modified': last_modified.isoformat() 
     }
@@ -9875,9 +10169,28 @@ def extract_resume_text_from_stream(file_stream, file_name, last_modified):
         extension = file_name.split('.')[-1].lower()
 
         if extension == "pdf":
-            reader = PyPDF2.PdfReader(file_stream)
-            for page in reader.pages:
-                text += page.extract_text() or "" 
+            file_stream.seek(0)
+            pdf_bytes = file_stream.read()
+
+            with tempfile.NamedTemporaryFile(
+                suffix=".pdf",
+                delete=False
+            ) as temp_pdf:
+                temp_pdf.write(pdf_bytes)
+                temp_pdf_path = temp_pdf.name
+
+            try:
+                with open(temp_pdf_path, "rb") as pdf_file:
+                    reader = PyPDF2.PdfReader(pdf_file)
+                    for page in reader.pages:
+                        text += page.extract_text() or ""
+
+                employment = employment_validator.build_deterministic_records(
+                    temp_pdf_path
+                )
+            finally:
+                if os.path.exists(temp_pdf_path):
+                    os.remove(temp_pdf_path)
 
         elif extension == "docx":
             doc = docx.Document(file_stream)
@@ -9900,13 +10213,61 @@ def extract_resume_text_from_stream(file_stream, file_name, last_modified):
         metadata['candidate_name'] = extract_candidate_name(text, file_name)
         metadata['education'] = extract_education(text)
         metadata['years_of_experience'] = calculate_experience(text)
-        job_title_details = extract_most_recent_job_title(text, return_details=True)
-        metadata['most_recent_job_title'] = job_title_details['title']
-        metadata['job_title_confidence'] = job_title_details['confidence']
-        metadata['job_title_score'] = job_title_details['score']
-        metadata['job_title_source'] = job_title_details['source']
-        metadata['job_title_requires_review'] = job_title_details['requires_review']
-        metadata['previous_job_titles'] = extract_previous_job_titles(text)
+        if extension == "pdf":
+            metadata['most_recent_job_title'] = employment.get('current_job_title') or 'N/A'
+            metadata['current_company'] = employment.get('current_company') or 'N/A'
+            metadata['previous_job_titles'] = "~~".join(
+                employment.get('previous_job_titles', [])
+            ) or 'N/A'
+            metadata['employment_status'] = employment.get(
+                'status', 'REVIEW_REQUIRED'
+            )
+            metadata['job_title_source'] = 'layout_candidate_engine_v1_3'
+            metadata['job_title_requires_review'] = (
+                metadata['employment_status'] != 'PASS'
+            )
+            metadata['job_title_confidence'] = (
+                'HIGH' if metadata['employment_status'] == 'PASS' else 'REVIEW'
+            )
+            metadata['job_title_score'] = (
+                100 if metadata['employment_status'] == 'PASS' else 0
+            )
+        else:
+            metadata['current_company'] = extract_current_company_docx(text)
+            job_title_details = extract_most_recent_job_title(
+                text, return_details=True
+            )
+            metadata['most_recent_job_title'] = job_title_details['title']
+            metadata['job_title_confidence'] = job_title_details['confidence']
+            metadata['job_title_score'] = job_title_details['score']
+            metadata['job_title_source'] = job_title_details['source']
+            metadata['job_title_requires_review'] = job_title_details['requires_review']
+            metadata['previous_job_titles'] = extract_previous_job_titles_docx(text)
+
+            # Conservative DOCX employment PASS gate.
+            # PASS only when the current title was found from strong
+            # employment structure and no title review is required.
+            company_ok = (
+                metadata['current_company']
+                and metadata['current_company'] not in ('N/A', 'Unknown')
+            )
+            previous_ok = (
+                metadata['previous_job_titles']
+                and metadata['previous_job_titles'] != 'N/A'
+            )
+            strong_title = (
+                job_title_details['confidence'] == 'HIGH'
+                and job_title_details['score'] >= 100
+                and job_title_details['margin'] >= 50
+                and not job_title_details['requires_review']
+                and job_title_details['source'] == 'following-role-line'
+            )
+
+            metadata['employment_status'] = (
+                'PASS'
+                if strong_title and company_ok and previous_ok
+                else 'REVIEW_REQUIRED'
+            )
 
     except Exception as e:
         print(f"Error extracting text from {file_name}: {e}")
@@ -10003,12 +10364,20 @@ def extract_experience_section(resume_text, max_lines=40):
 
     experience_headings = {
         "PROFESSIONALEXPERIENCE",
+        "PROFESSIONALWORKEXPERIENCE",
+        "WORKEXPERIENCEANDACHIEVEMENTS",
+        "RELATEDWORKEXPERIENCE",
+        "EXPERIENCEHIGHLIGHTS",
         "WORKEXPERIENCE",
         "WORKINGEXPERIENCE",
         "WORKHISTORY",
         "WORKBACKGROUND",
         "EMPLOYMENTHISTORY",
+        "EMPLOYMENTEXPERIENCE",
         "CAREERHISTORY",
+        "CAREEREXPERIENCE",
+        "RELEVANTEXPERIENCE",
+        "EXPERIENCESUMMARY",
         "JOBHISTORY",
         "EXPERIENCE",
         "EXPERIENCES",
@@ -10122,13 +10491,21 @@ def extract_experience_section(resume_text, max_lines=40):
 
     strong_experience_headings = [
         "PROFESSIONAL EXPERIENCE",
+        "PROFESSIONAL WORK EXPERIENCE",
+        "WORK EXPERIENCE & ACHIEVEMENTS",
+        "RELATED WORK EXPERIENCE",
+        "EXPERIENCE HIGHLIGHTS",
         "VOLUNTEERING AND WORK EXPERIENCE",
         "WORK EXPERIENCE",
         "WORKING EXPERIENCE",
         "WORK HISTORY",
         "WORK BACKGROUND",
         "EMPLOYMENT HISTORY",
+        "EMPLOYMENT EXPERIENCE",
         "CAREER HISTORY",
+        "CAREER EXPERIENCE",
+        "RELEVANT EXPERIENCE",
+        "EXPERIENCE SUMMARY",
         "JOB HISTORY",
         "LEADERSHIP AND VOLUNTEERING",
     ]
@@ -10185,12 +10562,20 @@ def extract_experience_section(resume_text, max_lines=40):
 
     repair_headings = [
         "PROFESSIONAL EXPERIENCE",
+        "PROFESSIONAL WORK EXPERIENCE",
+        "WORK EXPERIENCE & ACHIEVEMENTS",
+        "RELATED WORK EXPERIENCE",
+        "EXPERIENCE HIGHLIGHTS",
         "WORK EXPERIENCE",
         "WORKING EXPERIENCE",
         "WORK HISTORY",
         "WORK BACKGROUND",
         "EMPLOYMENT HISTORY",
+        "EMPLOYMENT EXPERIENCE",
         "CAREER HISTORY",
+        "CAREER EXPERIENCE",
+        "RELEVANT EXPERIENCE",
+        "EXPERIENCE SUMMARY",
         "JOB HISTORY",
         "PROJECTS",
         "VOLUNTEER",
@@ -10421,13 +10806,89 @@ def extract_experience_section(resume_text, max_lines=40):
     if in_experience:
         save_current_section()
 
-    return "\n\n".join(relevant_sections)
+    if relevant_sections:
+        return "\n\n".join(relevant_sections)
+
+    # ---------------------------------------------------------
+    # Conservative structural fallback for resumes that do not use a
+    # canonical experience heading.  A date alone is never sufficient.
+    # ---------------------------------------------------------
+    month = (
+        r'(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|'
+        r'Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|'
+        r'Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?'
+    )
+    current_terms = (
+        r'(?:Present|Current|Today|Ongoing|Now|To\s+Date|'
+        r'Till\s+Date|Till\s+Now|Continued|Continuing|Until\s+Date|Until\s+Now)'
+    )
+    date_atom = (
+        rf'(?:{month}\s*,?\s*\d{{4}}|'
+        rf'{month}\s*[\'’]\d{{2}}|'
+        rf'{month}\s*[- ]\s*\d{{2}}|'
+        rf'(?:0?[1-9]|1[0-2])/\d{{2,4}}|'
+        rf'(?:19|20)\d{{2}})'
+    )
+    employment_range = re.compile(
+        rf'(?i)\b{date_atom}\s*(?:[-\u2013\u2014]|to)\s*'
+        rf'(?:{date_atom}|{current_terms})\b'
+    )
+    explicit_role = re.compile(r'(?i)\b(?:position|job\s*title|role|title|company|employer|client)\s*[:\-]')
+    occupational_role = re.compile(
+        r'(?i)\b(?:architect|engineer|developer|analyst|manager|consultant|'
+        r'administrator|specialist|technician|director|lead|coordinator|'
+        r'officer|supervisor|scientist|programmer|recruiter|agent|cashier|'
+        r'advisor|executive|associate|assistant|intern)\b'
+    )
+    ambiguous_headings = {"PROFESSIONAL", "EMPLOYMENT"}
+
+    def nearest_boundary_before(index):
+        for j in range(index - 1, -1, -1):
+            compact = compact_heading(lines[j])
+            if compact in excluded_headings:
+                return "excluded", j
+            if compact in ambiguous_headings or compact in experience_headings:
+                return "experience", j
+        return None, None
+
+    candidate_index = None
+    candidate_start = None
+    for idx, raw_line in enumerate(lines):
+        if not employment_range.search(raw_line):
+            continue
+        boundary_type, boundary_index = nearest_boundary_before(idx)
+        local_start = max(0, idx - 5)
+        local_end = min(len(lines), idx + 6)
+        context = "\n".join(lines[local_start:local_end])
+        has_role_evidence = bool(explicit_role.search(context) or occupational_role.search(context))
+        if not has_role_evidence:
+            continue
+        if boundary_type == "excluded":
+            continue
+        candidate_index = idx
+        candidate_start = boundary_index if boundary_type == "experience" else local_start
+        break
+
+    if candidate_index is None:
+        return ""
+
+    fallback_lines = []
+    for idx in range(candidate_start, min(len(lines), candidate_start + max_lines + 1)):
+        if idx > candidate_start and compact_heading(lines[idx]) in excluded_headings:
+            break
+        fallback_lines.append(lines[idx].strip())
+
+    fallback_text = "\n".join(fallback_lines).strip()
+    if fallback_text:
+        print("Using conservative structural experience fallback.")
+    return fallback_text
 
 def extract_education_section(resume_text, max_lines=10):
     """
     Extract the education section from the resume and limit the number of lines.
     """
     education_headers = [
+        r'ACADEMIC QUALIFICATIONS', r'Academic Qualifications',
         r'EDUCATIONAL QUALIFICATIONS', r'Educational Qualifications',
         r'Education & Certifications', r'EDUCATION & CERTIFICATIONS',
         r'Education and Certifications', r'EDUCATION AND CERTIFICATIONS',

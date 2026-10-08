@@ -331,10 +331,7 @@ async def initialize_bm25_from_chromadb(collection, compare_all_titles, word, ke
 
     if min_experience is not None and max_experience is not None:
         exact_where_clause = {
-            "$and": [
-                {"years_of_experience": {"$gte": min_experience}},
-                {"years_of_experience": {"$lte": max_experience}}
-            ]
+            "years_of_experience": {"$gte": max_experience}
         }
     elif min_experience is not None:
         exact_where_clause = {
@@ -527,10 +524,7 @@ async def vector_rank_list(collection, word, pool_value, min_experience=None, ma
     where_clause = {}
     if min_experience is not None and max_experience is not None:
         where_clause = {
-            "$and": [
-                {"years_of_experience": {"$gte": min_experience}},
-                {"years_of_experience": {"$lte": max_experience}}
-            ]
+            "years_of_experience": {"$gte": max_experience}
         }
     elif min_experience is not None:
         where_clause = {"years_of_experience": {"$gte": min_experience}}

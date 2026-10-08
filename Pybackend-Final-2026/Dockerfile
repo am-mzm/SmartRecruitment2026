@@ -18,7 +18,10 @@ RUN pip install --upgrade pip
 # Copy the requirements file into the container
 COPY requirements_revised.txt .
 
-# Install the Python dependencies
+# Install CPU-only PyTorch (production server has no GPU)
+RUN pip install --no-cache-dir torch==2.6.0+cpu     --index-url https://download.pytorch.org/whl/cpu
+
+# Install the remaining Python dependencies
 RUN pip install --no-cache-dir -r requirements_revised.txt
 
 RUN pip install huggingface_hub[hf_xet]
