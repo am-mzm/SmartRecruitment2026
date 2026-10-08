@@ -330,9 +330,23 @@ async def initialize_bm25_from_chromadb(collection, compare_all_titles, word, ke
     exact_where_clause = {}
 
     if min_experience is not None and max_experience is not None:
-        exact_where_clause = {
-            "years_of_experience": {"$gte": max_experience}
-        }
+        if (min_experience, max_experience) == (0, 0):
+            pass
+        elif max_experience == 0:
+            exact_where_clause = {
+                "years_of_experience": {"$gte": min_experience}
+            }
+        elif min_experience == 0 and max_experience == 50:
+            exact_where_clause = {
+                "years_of_experience": {"$lte": 50.99}
+            }
+        else:
+                exact_where_clause = {
+                    "$and": [
+                        {"years_of_experience": {"$gte": min_experience}},
+                        {"years_of_experience": {"$lte": max_experience + 0.99}}
+                    ]
+                }
     elif min_experience is not None:
         exact_where_clause = {
             "years_of_experience": {"$gte": min_experience}
@@ -523,9 +537,23 @@ async def vector_rank_list(collection, word, pool_value, min_experience=None, ma
     # Conditions set in place for the range of experiece that is provided by the user(min experience or max experience or both are provided)
     where_clause = {}
     if min_experience is not None and max_experience is not None:
-        where_clause = {
-            "years_of_experience": {"$gte": max_experience}
-        }
+        if (min_experience, max_experience) == (0, 0):
+            pass
+        elif max_experience == 0:
+            where_clause = {
+                "years_of_experience": {"$gte": min_experience}
+            }
+        elif min_experience == 0 and max_experience == 50:
+            where_clause = {
+                "years_of_experience": {"$lte": 50.99}
+            }
+        else:
+                where_clause = {
+                    "$and": [
+                        {"years_of_experience": {"$gte": min_experience}},
+                        {"years_of_experience": {"$lte": max_experience + 0.99}}
+                    ]
+                }
     elif min_experience is not None:
         where_clause = {"years_of_experience": {"$gte": min_experience}}
     elif max_experience is not None:
