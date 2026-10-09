@@ -41,6 +41,7 @@ from io import BytesIO
 import nltk
 from nltk.tokenize import word_tokenize
 import employment_layout_ollama_validator_v1 as employment_validator
+from candidate_location_extractor import extract_candidate_location
 
 load_dotenv()
 
@@ -10022,6 +10023,9 @@ def extract_resume_text(resume_path):
         # candidate_name = extract_candidate_name(text, file_name)
         metadata['candidate_name'] = candidate_name
 
+        # Candidate location metadata
+        metadata.update(extract_candidate_location(text))
+
         education = extract_education(text)
         metadata['education'] = education
         
@@ -10211,6 +10215,7 @@ def extract_resume_text_from_stream(file_stream, file_name, last_modified):
         metadata['email'] = extract_email_address(text)
         metadata['core_technologies'] = extract_skills(text)
         metadata['candidate_name'] = extract_candidate_name(text, file_name)
+        metadata.update(extract_candidate_location(text))
         metadata['education'] = extract_education(text)
         metadata['years_of_experience'] = calculate_experience(text)
         if extension == "pdf":
