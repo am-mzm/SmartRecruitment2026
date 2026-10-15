@@ -1,0 +1,14 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+Chroma_Backups/
+chroma/*
+!chroma/IT_Skills_List.txt
+!chroma/job_titles.txt
+chroma-custom/
+chromadb_custom_image.tar
+
+# Environment files - never bake into Docker image
+.env
+.env.docker

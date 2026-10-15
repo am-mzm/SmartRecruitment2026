@@ -1,0 +1,1381 @@
+﻿APPLE
+apple
+Apple
+COBOL
+Cobol
+cobol
+PYTHON
+Python
+python
+JAVA
+Java
+java
+JAVASCRIPT
+JavaScript
+javascript
+REACT
+React
+react
+NODEJS
+NodeJS
+nodejs
+GIT
+Git
+git
+DOCKER
+Docker
+docker
+KUBERNETES
+Kubernetes
+kubernetes
+AWS
+Aws
+aws
+AZURE
+Azure
+azure
+SQL
+Sql
+sql
+MYSQL
+MySQL
+mysql
+POSTGRESQL
+PostgreSQL
+postgresql
+LINUX
+Linux
+linux
+WINDOWS
+Windows
+windows
+MACOS
+macOS
+MacOS
+IOS
+iOS
+ios
+ANDROID
+Android
+android
+HTML
+Html
+html
+CSS
+Css
+css
+PHP
+Php
+php
+RUBY
+Ruby
+ruby
+CSHARP
+CSharp
+csharp
+DOTNET
+DotNet
+dotnet
+ANGULAR
+Angular
+angular
+VUEJS
+VueJS
+vuejs
+TYPESCRIPT
+TypeScript
+typescript
+SWIFT
+Swift
+swift
+KOTLIN
+Kotlin
+kotlin
+RUST
+Rust
+rust
+GOLANG
+GoLang
+golang
+SCALA
+Scala
+scala
+HADOOP
+Hadoop
+hadoop
+SPARK
+Spark
+spark
+TABLEAU
+Tableau
+tableau
+POWERBI
+PowerBI
+powerbi
+EXCEL
+Excel
+excel
+WORD
+Word
+word
+POWERPOINT
+PowerPoint
+powerpoint
+OUTLOOK
+Outlook
+outlook
+JIRA
+Jira
+jira
+CONFLUENCE
+Confluence
+confluence
+SLACK
+Slack
+slack
+ZOOM
+Zoom
+zoom
+AGILE
+Agile
+agile
+SCRUM
+Scrum
+scrum
+KANBAN
+Kanban
+kanban
+DEVOPS
+DevOps
+devops
+CICD
+CICD
+cicd
+JENKINS
+Jenkins
+jenkins
+ANSIBLE
+Ansible
+ansible
+TERRAFORM
+Terraform
+terraform
+BLOCKCHAIN
+Blockchain
+blockchain
+MACHINELEARNING
+MachineLearning
+machinelearning
+ARTIFICIALINTELLIGENCE
+ArtificialIntelligence
+artificialintelligence
+DEEPLEARNING
+DeepLearning
+deeplearning
+TENSORFLOW
+TensorFlow
+tensorflow
+PYTORCH
+PyTorch
+pytorch
+OPENCV
+OpenCV
+opencv
+NUMPY
+NumPy
+numpy
+PANDAS
+Pandas
+pandas
+SCIKIT-LEARN
+Scikit-learn
+scikit-learn
+MATPLOTLIB
+Matplotlib
+matplotlib
+SEABORN
+Seaborn
+seaborn
+JUPYTER
+Jupyter
+jupyter
+VSCODE
+VSCode
+vscode
+INTELLIJ
+IntelliJ
+intellij
+ECLIPSE
+Eclipse
+eclipse
+VISUALSTUDIO
+VisualStudio
+visualstudio
+SUBLIMETEXT
+SublimeText
+sublimetext
+ATOM
+Atom
+atom
+NOTEPAD++
+Notepad++
+notepad++
+PHOTOSHOP
+Photoshop
+photoshop
+ILLUSTRATOR
+Illustrator
+illustrator
+INDESIGN
+InDesign
+indesign
+PREMIERE
+Premiere
+premiere
+AFTEREFFECTS
+AfterEffects
+aftereffects
+FIGMA
+Figma
+figma
+SKETCH
+Sketch
+sketch
+ADOBEXD
+AdobeXD
+adobexd
+INVISION
+InVision
+invision
+ZEPLIN
+Zeplin
+zeplin
+AXURE
+Axure
+axure
+BALSAMIQ
+Balsamiq
+balsamiq
+MIRO
+Miro
+miro
+TRELLO
+Trello
+trello
+ASANA
+Asana
+asana
+BASECAMP
+Basecamp
+basecamp
+MONDAY
+Monday
+monday
+NOTION
+Notion
+notion
+EVERNOTE
+Evernote
+evernote
+ONENOTE
+OneNote
+onenote
+GOOGLEANALYTICS
+GoogleAnalytics
+googleanalytics
+GOOGLEADS
+GoogleAds
+googleads
+FACEBOOKADS
+FacebookAds
+facebookads
+MAILCHIMP
+MailChimp
+mailchimp
+HUBSPOT
+HubSpot
+hubspot
+SALESFORCE
+Salesforce
+salesforce
+ZENDESK
+Zendesk
+zendesk
+FRESHDESK
+Freshdesk
+freshdesk
+INTERCOM
+Intercom
+intercom
+DRIFT
+Drift
+drift
+MIXPANEL
+Mixpanel
+mixpanel
+AMPLITUDE
+Amplitude
+amplitude
+HOTJAR
+Hotjar
+hotjar
+CRAZYEGG
+CrazyEgg
+crazyegg
+OPTIMIZELY
+Optimizely
+optimizely
+ABTASTY
+ABTasty
+abtasty
+GOOGLETAGMANAGER
+GoogleTagManager
+googletagmanager
+ZAPIER
+Zapier
+zapier
+IFTTT
+IFTTT
+ifttt
+POSTMAN
+Postman
+postman
+SWAGGER
+Swagger
+swagger
+CURL
+cURL
+curl
+WIRESHARK
+Wireshark
+wireshark
+FIDDLER
+Fiddler
+fiddler
+CHARLES
+Charles
+charles
+BURPSUITE
+BurpSuite
+burpsuite
+NMAP
+Nmap
+nmap
+METASPLOIT
+Metasploit
+metasploit
+KALI
+Kali
+kali
+VIRTUALBOX
+VirtualBox
+virtualbox
+VMWARE
+VMware
+vmware
+HYPER-V
+Hyper-V
+hyper-v
+DOCKER
+Docker
+docker
+KUBERNETES
+Kubernetes
+kubernetes
+OPENSHIFT
+OpenShift
+openshift
+RANCHER
+Rancher
+rancher
+HELM
+Helm
+helm
+ISTIO
+Istio
+istio
+PROMETHEUS
+Prometheus
+prometheus
+GRAFANA
+Grafana
+grafana
+ELASTICSEARCH
+Elasticsearch
+elasticsearch
+LOGSTASH
+Logstash
+logstash
+KIBANA
+Kibana
+kibana
+SPLUNK
+Splunk
+splunk
+NAGIOS
+Nagios
+nagios
+ZABBIX
+Zabbix
+zabbix
+PUPPET
+Puppet
+puppet
+CHEF
+Chef
+chef
+SALTSTACK
+SaltStack
+saltstack
+ANSIBLE
+Ansible
+ansible
+TERRAFORM
+Terraform
+terraform
+CLOUDFORMATION
+CloudFormation
+cloudformation
+PACKER
+Packer
+packer
+VAGRANT
+Vagrant
+vagrant
+JENKINS
+Jenkins
+jenkins
+GITLAB
+GitLab
+gitlab
+GITHUB
+GitHub
+github
+BITBUCKET
+Bitbucket
+bitbucket
+CIRCLECI
+CircleCI
+circleci
+TRAVISCI
+TravisCI
+travisci
+TEAMCITY
+TeamCity
+teamcity
+BAMBOO
+Bamboo
+bamboo
+OCTOPUS
+Octopus
+octopus
+ARTIFACTORY
+Artifactory
+artifactory
+NEXUS
+Nexus
+nexus
+SONARQUBE
+SonarQube
+sonarqube
+CHECKMARX
+Checkmarx
+checkmarx
+VERACODE
+Veracode
+veracode
+FORTIFY
+Fortify
+fortify
+NESSUS
+Nessus
+nessus
+QUALYS
+Qualys
+qualys
+TENABLE
+Tenable
+tenable
+RAPID7
+Rapid7
+rapid7
+SNYK
+Snyk
+snyk
+AQUASEC
+AquaSec
+aquasec
+TWISTLOCK
+Twistlock
+twistlock
+ANCHORE
+Anchore
+anchore
+TRIVY
+Trivy
+trivy
+CLAIR
+Clair
+clair
+DEPENDABOT
+Dependabot
+dependabot
+WHITESOURCE
+WhiteSource
+whitesource
+BLACKDUCK
+BlackDuck
+blackduck
+SONATYPE
+Sonatype
+sonatype
+JFROG
+JFrog
+jfrog
+NEXUS
+Nexus
+nexus
+ARTIFACTORY
+Artifactory
+artifactory
+MAVEN
+Maven
+maven
+GRADLE
+Gradle
+gradle
+NPM
+Npm
+npm
+YARN
+Yarn
+yarn
+PIP
+Pip
+pip
+CONDA
+Conda
+conda
+NUGET
+NuGet
+nuget
+CHOCOLATEY
+Chocolatey
+chocolatey
+HOMEBREW
+Homebrew
+homebrew
+APT
+Apt
+apt
+YUM
+Yum
+yum
+DNF
+Dnf
+dnf
+ZYPPER
+Zypper
+zypper
+PACMAN
+Pacman
+pacman
+SNAP
+Snap
+snap
+FLATPAK
+Flatpak
+flatpak
+APPIMAGE
+AppImage
+appimage
+DOCKER
+Docker
+docker
+PODMAN
+Podman
+podman
+CONTAINERD
+Containerd
+containerd
+CRI-O
+CRI-O
+cri-o
+RUNC
+RunC
+runc
+KUBERNETES
+Kubernetes
+kubernetes
+OPENSHIFT
+OpenShift
+openshift
+RANCHER
+Rancher
+rancher
+MESOS
+Mesos
+mesos
+NOMAD
+Nomad
+nomad
+SWARM
+Swarm
+swarm
+ECS
+ECS
+ecs
+EKS
+EKS
+eks
+AKS
+AKS
+aks
+GKE
+GKE
+gke
+DIGITALOCEAN
+DigitalOcean
+digitalocean
+LINODE
+Linode
+linode
+VULTR
+Vultr
+vultr
+HEROKU
+Heroku
+heroku
+NETLIFY
+Netlify
+netlify
+VERCEL
+Vercel
+vercel
+FIREBASE
+Firebase
+firebase
+CLOUDFLARE
+Cloudflare
+cloudflare
+AKAMAI
+Akamai
+akamai
+FASTLY
+Fastly
+fastly
+NGINX
+Nginx
+nginx
+APACHE
+Apache
+apache
+HAPROXY
+HAProxy
+haproxy
+TRAEFIK
+Traefik
+traefik
+ENVOY
+Envoy
+envoy
+ISTIO
+Istio
+istio
+LINKERD
+Linkerd
+linkerd
+CONSUL
+Consul
+consul
+ETCD
+etcd
+ETCD
+ZOOKEEPER
+ZooKeeper
+zookeeper
+REDIS
+Redis
+redis
+MEMCACHED
+Memcached
+memcached
+RABBITMQ
+RabbitMQ
+rabbitmq
+KAFKA
+Kafka
+kafka
+ACTIVEMQ
+ActiveMQ
+activemq
+NATS
+NATS
+nats
+PULSAR
+Pulsar
+pulsar
+MQTT
+MQTT
+mqtt
+GRPC
+gRPC
+grpc
+GRAPHQL
+GraphQL
+graphql
+REST
+REST
+rest
+SOAP
+SOAP
+soap
+OPENAPI
+OpenAPI
+openapi
+SWAGGER
+Swagger
+swagger
+POSTMAN
+Postman
+postman
+INSOMNIA
+Insomnia
+insomnia
+CURL
+cURL
+curl
+WGET
+Wget
+wget
+JQ
+jq
+JQ
+YQ
+yq
+YQ
+XMLSTARLET
+XMLStarlet
+xmlstarlet
+SED
+sed
+SED
+AWK
+awk
+AWK
+GREP
+grep
+GREP
+XARGS
+xargs
+XARGS
+TMUX
+tmux
+TMUX
+VIM
+Vim
+vim
+EMACS
+Emacs
+emacs
+NANO
+Nano
+nano
+TAIL
+tail
+TAIL
+WC
+wc
+WC
+UNIQ
+uniq
+UNIQ
+SED
+sed
+SED
+AWK
+awk
+AWK
+PERL
+Perl
+perl
+PYTHON
+Python
+python
+RUBY
+Ruby
+ruby
+BASH
+Bash
+bash
+ZSH
+Zsh
+zsh
+FISH
+Fish
+fish
+POWERSHELL
+PowerShell
+powershell
+CMD
+CMD
+cmd
+VBS
+VBS
+vbs
+JAVASCRIPT
+JavaScript
+javascript
+TYPESCRIPT
+TypeScript
+typescript
+COFFEESCRIPT
+CoffeeScript
+coffeescript
+LIVESCRIPT
+LiveScript
+livescript
+DART
+Dart
+dart
+KOTLIN
+Kotlin
+kotlin
+SCALA
+Scala
+scala
+GROOVY
+Groovy
+groovy
+CLOJURE
+Clojure
+clojure
+ERLANG
+Erlang
+erlang
+ELIXIR
+Elixir
+elixir
+HASKELL
+Haskell
+haskell
+OCAML
+OCaml
+ocaml
+FSHARP
+FSharp
+fsharp
+RUST
+Rust
+rust
+SWIFT
+Swift
+swift
+OBJECTIVEC
+ObjectiveC
+objectivec
+CPP
+CPP
+cpp
+ASSEMBLY
+Assembly
+assembly
+FORTRAN
+Fortran
+fortran
+COBOL
+COBOL
+cobol
+PASCAL
+Pascal
+pascal
+DELPHI
+Delphi
+delphi
+VISUALBASIC
+VisualBasic
+visualbasic
+CSHARP
+CSharp
+csharp
+FSHARP
+FSharp
+fsharp
+JAVA
+Java
+java
+KOTLIN
+Kotlin
+kotlin
+SCALA
+Scala
+scala
+GROOVY
+Groovy
+groovy
+CLOJURE
+Clojure
+clojure
+ERLANG
+Erlang
+erlang
+ELIXIR
+Elixir
+elixir
+HASKELL
+Haskell
+haskell
+OCAML
+OCaml
+ocaml
+FSHARP
+FSharp
+fsharp
+RUST
+Rust
+rust
+SWIFT
+Swift
+swift
+OBJECTIVEC
+ObjectiveC
+objectivec
+CPP
+CPP
+cpp
+ASSEMBLY
+Assembly
+assembly
+FORTRAN
+Fortran
+fortran
+COBOL
+COBOL
+cobol
+PASCAL
+Pascal
+pascal
+DELPHI
+Delphi
+delphi
+VISUALBASIC
+VisualBasic
+visualbasic
+CSHARP
+CSharp
+csharp
+FSHARP
+FSharp
+fsharp
+JAVA
+Java
+java
+KOTLIN
+Kotlin
+kotlin
+SCALA
+Scala
+scala
+GROOVY
+Groovy
+groovy
+CLOJURE
+Clojure
+clojure
+ERLANG
+Erlang
+erlang
+ELIXIR
+Elixir
+elixir
+HASKELL
+Haskell
+haskell
+OCAML
+OCaml
+ocaml
+FSHARP
+FSharp
+fsharp
+RUST
+Rust
+rust
+SWIFT
+Swift
+swift
+OBJECTIVEC
+ObjectiveC
+objectivec
+CPP
+CPP
+cpp
+ASSEMBLY
+Assembly
+assembly
+FORTRAN
+Fortran
+fortran
+COBOL
+COBOL
+cobol
+PASCAL
+Pascal
+pascal
+DELPHI
+Delphi
+delphi
+VISUALBASIC
+VisualBasic
+visualbasic
+CSHARP
+CSharp
+csharp
+FSHARP
+FSharp
+fsharp
+JAVA
+Java
+java
+KOTLIN
+Kotlin
+kotlin
+SCALA
+Scala
+scala
+GROOVY
+Groovy
+groovy
+CLOJURE
+Clojure
+clojure
+ERLANG
+Erlang
+erlang
+ELIXIR
+Elixir
+elixir
+HASKELL
+Haskell
+haskell
+OCAML
+OCaml
+ocaml
+FSHARP
+FSharp
+fsharp
+RUST
+Rust
+rust
+SWIFT
+Swift
+swift
+OBJECTIVEC
+ObjectiveC
+objectivec
+CPP
+CPP
+cpp
+ASSEMBLY
+Assembly
+assembly
+FORTRAN
+Fortran
+fortran
+COBOL
+SNOWPRO
+SnowPro
+snowpro
+SNOWPRO CORE CERTIFICATION
+SnowPro Core Certification
+snowpro core certification
+SNOWPRO ADVANCED ARCHITECT
+SnowPro Advanced Architect
+snowpro advanced architect
+SNOWPRO ADVANCED ADMINISTRATOR
+SnowPro Advanced Administrator
+snowpro advanced administrator
+SNOWPRO ADVANCED DATA ENGINEER
+SnowPro Advanced Data Engineer
+snowpro advanced data engineer
+SNOWPRO ADVANCED DATA SCIENTIST
+SnowPro Advanced Data Scientist
+snowpro advanced data scientist
+SNOWPRO ADVANCED DATA ANALYST
+SnowPro Advanced Data Analyst
+snowpro advanced data analyst
+AWS CERTIFIED CLOUD PRACTITIONER
+AWS Certified Cloud Practitioner
+aws certified cloud practitioner
+CERTIFIED AGILE LEADERSHIP
+Certified Agile Leadership
+certified agile leadership
+CERTIFIED CLOUD SECURITY PROFESSIONAL
+Certified Cloud Security Professional
+certified cloud security professional
+CCSP
+Ccsp
+ccsp
+CERTIFIED DATA PRIVACY SOLUTIONS ENGINEER
+Certified Data Privacy Solutions Engineer
+certified data privacy solutions engineer
+CDPSE
+Cdpse
+cdpse
+CERTIFIED DATA PROFESSIONAL
+Certified Data Professional
+certified data professional
+CDP
+Cdp
+cdp
+CERTIFIED ETHICAL HACKER
+Certified Ethical Hacker
+certified ethical hacker
+CEH
+Ceh
+ceh
+CERTIFIED INFORMATION SECURITY MANAGER
+Certified Information Security Manager
+certified information security manager
+CISM
+Cism
+cism
+CERTIFIED INFORMATION SYSTEMS AUDITOR
+Certified Information Systems Auditor
+certified information systems auditor
+CISA
+Cisa
+cisa
+CERTIFIED INFORMATION SYSTEMS SECURITY PROFESSIONAL
+Certified Information Systems Security Professional
+certified information systems security professional
+CISSP
+Cissp
+cissp
+CISCO CERTIFIED INTERNETWORK EXPERT
+Cisco Certified Internetwork Expert
+cisco certified internetwork expert
+CCIE
+Ccie
+ccie
+CISCO CERTIFIED NETWORK PROFESSIONAL
+Cisco Certified Network Professional
+cisco certified network professional
+CCNP
+Ccnp
+ccnp
+COMPTIA A+
+CompTIA A+
+comptia a+
+COMPTIA CLOUD+
+CompTIA Cloud+
+comptia cloud+
+COMPTIA SECURITY+
+CompTIA Security+
+comptia security+
+MICROSOFT CERTIFIED AZURE SOLUTIONS ARCHITECT
+Microsoft Certified Azure Solutions Architect
+microsoft certified azure solutions architect
+MICROSOFT CERTIFIED SOLUTIONS ASSOCIATE
+Microsoft Certified Solutions Associate
+microsoft certified solutions associate
+MCSA
+Mcsa
+mcsa
+MICROSOFT CERTIFIED SOLUTIONS EXPERT
+Microsoft Certified Solutions Expert
+microsoft certified solutions expert
+MCSE
+Mcse
+mcse
+INFORMATION TECHNOLOGY INFRASTRUCTURE LIBRARY
+Information Technology Infrastructure Library
+information technology infrastructure library
+ITIL
+Itil
+itil
+ORACLE DATABASE CERTIFICATION
+Oracle Database Certification
+oracle database certification
+MYSQL ADMINISTRATION CERTIFICATION
+MySQL Administration Certification
+mysql administration certification
+PROJECT MANAGEMENT PROFESSIONAL
+Project Management Professional
+project management professional
+PMP
+Pmp
+pmp
+PROFESSIONAL SCRUM MASTER
+Professional Scrum Master
+professional scrum master
+PSM
+Psm
+psm
+SALESFORCE CERTIFIED DEVELOPMENT LIFECYCLE AND DEPLOYMENT DESIGNER
+Salesforce Certified Development Lifecycle and Deployment Designer
+salesforce certified development lifecycle and deployment designer
+CERTIFIED IN RISK AND INFORMATION SYSTEMS CONTROL
+Certified in Risk and Information Systems Control
+certified in risk and information systems control
+CRISC
+Crisc
+crisc
+CERTIFIED IN THE GOVERNANCE OF ENTERPRISE IT
+Certified in the Governance of Enterprise IT
+certified in the governance of enterprise it
+CGEIT
+Cgeit
+cgeit
+CYBERSECURITY NEXUS
+Cybersecurity Nexus
+cybersecurity nexus
+CSX-P
+Csx-p
+csx-p
+GLOBAL INFORMATION ASSURANCE CERTIFICATIONS
+Global Information Assurance Certifications
+global information assurance certifications
+GIAC
+Giac
+giac
+VMWARE CERTIFIED PROFESSIONAL
+VMware Certified Professional
+vmware certified professional
+AWS CERTIFIED SOLUTIONS ARCHITECT PROFESSIONAL
+AWS Certified Solutions Architect Professional
+aws certified solutions architect professional
+SAP CERTIFIED TECHNOLOGY ASSOCIATE
+SAP Certified Technology Associate
+sap certified technology associate
+MICROSOFT SQL SERVER CERTIFICATIONS
+Microsoft SQL Server Certifications
+microsoft sql server certifications
+CCIE DATA CENTER
+CCIE Data Center
+ccie data center
+CISCO CERTIFIED NETWORK ASSOCIATE
+Cisco Certified Network Associate
+cisco certified network associate
+CCNA
+Ccna
+ccna
+CISCO CERTIFIED ARCHITECT
+Cisco Certified Architect
+cisco certified architect
+CCAR
+CCar
+ccar
+CERTIFIED TECHNICAL TRAINER
+Certified Technical Trainer
+certified technical trainer
+CTT+
+Ctt+
+ctt+
+COMPTIA LINUX+
+CompTIA Linux+
+comptia linux+
+GIAC SECURITY EXPERT
+GIAC Security Expert
+giac security expert
+GSE
+Gse
+gse
+GOOGLE CLOUD PROFESSIONAL CLOUD ARCHITECT
+Google Cloud Professional Cloud Architect
+google cloud professional cloud architect
+GOOGLE CLOUD PROFESSIONAL DATA ENGINEER
+Google Cloud Professional Data Engineer
+google cloud professional data engineer
+GOOGLE CLOUD PROFESSIONAL CLOUD DATABASE ENGINEER
+Google Cloud Professional Cloud Database Engineer
+google cloud professional cloud database engineer
+GOOGLE CLOUD ASSOCIATE CLOUD ENGINEER
+Google Cloud Associate Cloud Engineer
+google cloud associate cloud engineer
+BTA CERTIFIED BLOCKCHAIN SECURITY PROFESSIONAL
+BTA Certified Blockchain Security Professional
+bta certified blockchain security professional
+CBSP
+Cbsp
+cbsp
+AWS CERTIFIED ADVANCED NETWORKING SPECIALTY
+AWS Certified Advanced Networking Specialty
+aws certified advanced networking specialty
+AWS CERTIFIED DEVOPS ENGINEER PROFESSIONAL
+AWS Certified DevOps Engineer Professional
+aws certified devops engineer professional
+AWS CERTIFIED DEVELOPER ASSOCIATE
+AWS Certified Developer Associate
+aws certified developer associate
+AWS CERTIFIED DATABASE SPECIALTY
+AWS Certified Database Specialty
+aws certified database specialty
+COMPTIA CYSA+
+CompTIA CySA+
+comptia cysa+
+MICROSOFT CERTIFIED AZURE ADMINISTRATOR ASSOCIATE
+Microsoft Certified Azure Administrator Associate
+microsoft certified azure administrator associate
+COMPTIA SERVER+
+CompTIA Server+
+comptia server+
+COMPTIA CASP+
+CompTIA CASP+
+comptia casp+
+COMPTIA PENTEST+
+CompTIA PenTest+
+comptia pentest+
+COMPTIA DATA+
+CompTIA Data+
+comptia data+
+COMPTIA DATASYS+
+CompTIA DataSys+
+comptia datasys+
+COMPTIA DATAX
+CompTIA DataX
+comptia datax
+COMPTIA PROJECT+
+CompTIA Project+
+comptia project+
+GOOGLE IT SUPPORT PROFESSIONAL CERTIFICATE
+Google IT Support Professional Certificate
+google it support professional certificate
+CERTIFIED SCRUMMASTER
+Certified ScrumMaster
+certified scrummaster
+MICROSOFT TECHNOLOGY ASSOCIATE
+Microsoft Technology Associate
+microsoft technology associate
+MTA
+Mta
+mta
+MICROSOFT FUNDAMENTALS
+Microsoft Fundamentals
+microsoft fundamentals
+COMPTIA NETWORK+
+CompTIA Network+
+comptia network+
+EC-COUNCIL CERTIFIED ETHICAL HACKER
+EC-Council Certified Ethical Hacker
+ec-council certified ethical hacker
+LINUX ESSENTIALS
+Linux Essentials
+linux essentials
+Snowflake
+DBT
+Snowpipe
+Redshift
+BigQuery
+Azure Data Factory
+Azure Synapse
+Airflow
+Prefect
+SnapLogic
+Power BI
+Oracle
+SQL Server
+Teradata
+GCP
+S3
+Visual Basic
+BASIC Programming

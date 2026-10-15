@@ -1,0 +1,21 @@
+import { graphConfig } from "./authConfigur.ts";
+
+export async function callMsGraph(accessToken: string) {
+    const headers = new Headers();
+    const bearer = `Bearer ${accessToken}`;
+
+    headers.append("Authorization", bearer);
+
+    const options = {
+        method: "GET",
+        headers: headers,
+    };
+
+    return fetch(graphConfig.graphMeMemberOfEndpoint, options)
+        .then(response => response.json())
+        .then(data => {
+            // console.log("Graph API response:", data); // Add this line to log the response
+            return data;
+        })
+        .catch(error => console.log(error));
+}

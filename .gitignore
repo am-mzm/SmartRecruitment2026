@@ -1,0 +1,53 @@
+﻿# SmartRecruitment permanent Git protection
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Geographic databases and runtime data
+/data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Backups, logs and generated test results
+/backups/
+/logs/
+/testing/results/
+*.bak
+*.backup
+*.log
+
+# Python generated files
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.pytest_cache/
+
+# React and Node generated files
+node_modules/
+build/
+dist/
+coverage/
+
+# Temporary files
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Public GeoNames deployment data - allowlist only
+!/data/
+/data/*
+!/data/GeoReference/
+/data/GeoReference/*
+!/data/GeoReference/geonames_cities.sqlite
+!/data/GeoReference/canada_province_codes.txt
+!/data/GeoReference/admin1CodesASCII.txt
+# Historical source snapshots - keep locally, not in GitHub
+*_PRE_*.py
+*_BACKUP_*.py
+*_old.py
+*.before_*.html

@@ -1,0 +1,19 @@
+# SmartRecruitment GeoNames Canada administrative level 1 mapping
+# Format: CountryISO<TAB>ProvinceOrTerritory<TAB>Abbreviation<TAB>GeoNamesAdmin1Code
+# Source: https://www.geonames.org/CA/administrative-division-canada.html
+# Verify against local GeoNames admin1CodesASCII.txt when importing.
+# GeoNames attribution: https://www.geonames.org/ (CC BY 4.0)
+CountryISO	ProvinceOrTerritory	Abbreviation	GeoNamesAdmin1Code
+CA	Alberta	AB	01
+CA	British Columbia	BC	02
+CA	Manitoba	MB	03
+CA	New Brunswick	NB	04
+CA	Newfoundland and Labrador	NL	05
+CA	Nova Scotia	NS	07
+CA	Ontario	ON	08
+CA	Prince Edward Island	PE	09
+CA	Quebec	QC	10
+CA	Saskatchewan	SK	11
+CA	Yukon	YT	12
+CA	Northwest Territories	NT	13
+CA	Nunavut	NU	14

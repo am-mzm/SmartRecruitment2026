@@ -1,0 +1,12 @@
+WORD RESUME JOB TITLE TEST
+========================================================================================================================
+#01 | .docx | HIGH   | Score=220  | Margin=180  | Scrum Master – Total Fund Operations | Andrew Haladay's Resume.docx
+#02 | .docx | HIGH   | Score=312  | Margin=277  | Exp Realty, Product Manager | BK1_RES.docx
+#03 | .docx | HIGH   | Score=312  | Margin=242  | Enterprise / Security Architect | Candidate2.docx
+#04 | .docx | HIGH   | Score=300  | Margin=165  | Sr. Security Advisor And Assessor | Candidate7.docx
+#05 | .docx | HIGH   | Score=302  | Margin=232  | District Sales Manager | Craig's+Resume+(2)+(2) (2)-1.docx
+#06 | .docx | HIGH   | Score=222  | Margin=187  | Chief Architect Financial Services – Contract | Cyrus Kalatbari.docx
+#07 | .docx | LOW    | Score=135  | Margin=135  | Dlawlor Llc | DanLawlor-2-4.docx
+#08 | .doc  | HIGH   | Score=212  | Margin=142  | Senior Software Developer (Contract) | erSoftDevJavaWorksBC.doc
+#09 | .docx | HIGH   | Score=307  | Margin=247  | Sr. Devops Cloud Engineer | Godfred Kwame Gyekye GOA 419.docx
+#10 | .docx | HIGH   | Score=240  | Margin=170  | Strategic Business Executive | Greg+Strickland Resume 2024.docx
