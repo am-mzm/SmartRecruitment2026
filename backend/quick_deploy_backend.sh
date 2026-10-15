@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-BASE_DIR="/home/asandhu/SmartRecruitment2026/Pybackend-Final-2026"
+BASE_DIR="/home/asandhu/SmartRecruitment2026/backend"
 CONTAINER="pybackend_revised"
 CONTAINER_ROOT="/pybackend_revised"
 HEALTH_URL="http://localhost:8002/"

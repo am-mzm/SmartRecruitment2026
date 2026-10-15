@@ -1,0 +1,8 @@
+# Maintain Linux-compatible shell scripts
+*.sh text eol=lf
+
+# Keep Windows PowerShell scripts compatible with Windows
+*.ps1 text eol=crlf
+
+# Preserve binary geographic reference data
+*.sqlite binary

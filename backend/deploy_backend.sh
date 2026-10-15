@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-BASE_DIR="/home/asandhu/SmartRecruitment2026/Pybackend-Final-2026"
+BASE_DIR="/home/asandhu/SmartRecruitment2026/backend"
 COMPOSE_FILE="$BASE_DIR/docker-compose.yml"
 SERVICE="pybackend"
 CONTAINER="pybackend_revised"
@@ -68,7 +68,7 @@ echo "==> Creating source-code safety backup..."
 
 mkdir -p "$SOURCE_BACKUP_DIR"
 
-SOURCE_BACKUP="$SOURCE_BACKUP_DIR/Pybackend-Final-2026_PRE_DEPLOY_${TIMESTAMP}.tar.gz"
+SOURCE_BACKUP="$SOURCE_BACKUP_DIR/backend_PRE_DEPLOY_${TIMESTAMP}.tar.gz"
 
 tar     --exclude='./deployment_logs'     --exclude='./deploy_backend_PRE_AUTO_RETENTION_20261007.sh'     -czf "$SOURCE_BACKUP"     -C "$(dirname "$BASE_DIR")"     "$(basename "$BASE_DIR")"
 
